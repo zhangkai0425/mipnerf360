@@ -2,8 +2,7 @@ import torch
 import torch.nn as nn
 
 def contract(x):
-    """[summary]
-    contract function of x,used in parameterization
+    """contract function of x,used in parameterization
     Arguments:
         x {[torch.tensor]} -- the parameter of t along the ray
 
@@ -15,9 +14,20 @@ def contract(x):
         return x
     else:
         return (2-1/x_norm)*(x/x_norm)
+def jacobian(inputs, outputs):
+    """compute the jacobian matrix of input  
+
+    Arguments:
+        inputs {[type]} -- [description]
+        outputs {[type]} -- [description]
+
+    Returns:
+        [type] -- [description]
+    """
+    return torch.stack([grad([outputs[:, i].sum()], [inputs], retain_graph=True, create_graph=True)[0] for i in range(outputs.size(1))], dim=-1)
+
 def gaussian_to_xyz(d, t_mean, t_var, r_var, diag=False):
-    """[summary]
-    lift a gaussian of conical axis to xyz axis
+    """lift a gaussian of conical axis to xyz axis
     Arguments:
         d:torch.float32 3-vector,the axis of the cone of each rays
         t_mean:float,t_mean of each intervals
@@ -44,9 +54,25 @@ def gaussian_to_xyz(d, t_mean, t_var, r_var, diag=False):
         cov = t_cov + xy_cov
         return mean, cov
 
-    
+def gaussian_contract(mean,cov):
+    """lift a gaussian of xyz axis to contracted axis
 
-    return 0
+    Arguments:
+        mean,float -- [description]
+        cov,tensor.float32 -- [description]
+
+    Returns:
+        [type] -- [description]
+    """
+    mean = contract(mean)
+    
+    return mean, cov
+
+
+
+
+
+
 
 def conical_frustum_to_gaussian(d, t0, t1, base_radius, diag, stable=True):
     """[summary]
@@ -76,9 +102,9 @@ def conical_frustum_to_gaussian(d, t0, t1, base_radius, diag, stable=True):
         r_var = base_radius**2 * (3 / 20 * (t1**5 - t0**5) / (t1**3 - t0**3))
         t_mosq = 3 / 5 * (t1**5 - t0**5) / (t1**3 - t0**3)
         t_var = t_mosq - t_mean**2
-    gaussian_xyz = gaussian_to_xyz(d, t_mean, t_var, r_var, diag)
-    gaussion_para = gaussian_xyz
-    return gaussion_para
+    xyz_mean,xyz_cov = gaussian_to_xyz(d, t_mean, t_var, r_var, diag)
+    mean,cov = gaussian_contract(mean=xyz_mean,cov=xyz_cov)
+    return mean,cov
 
 
 

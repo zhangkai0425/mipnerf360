@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 from torch.nn.modules.activation import Sigmoid
 
+
 class mipNeRF360(nn.Module):
     def __init__(self,
                  randomized=False,
@@ -98,7 +99,9 @@ class mipNeRF360(nn.Module):
                 s_vals, (mean, var) = resample_along_rays(rays.origins,rays.directions,rays.radii,
                                                           s_vals.to(rays.origins.device),weights.to(rays.origins.device),
                                                           randomized=self.randomized,stop_grad=True,resample_padding=self.resample_padding)
-                         
+            # integrated positional encoding(IPE) of samples
+            samples_enc = self.postional
+                    
 
 
         return 0
@@ -112,7 +115,8 @@ def _kaiming_init(model):
     perform kaiming initialization to the model
     Arguments:
         model {[nn.module]}
-    Output:
+
+    Returns:
         model {[nn.module]}
     """
     for module in model.modules():

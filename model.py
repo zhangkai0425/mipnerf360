@@ -6,8 +6,9 @@ class mipNeRF360(nn.Module):
     def __init__(self,
                  randomized=False,
                  num_samples=128,
-                 hidden_proposal = 256,
-                 hidden_nerf = 1024,
+                 num_levels=2,
+                 hidden_proposal=256,
+                 hidden_nerf=1024,
                  density_bias=-1,
                  rgb_padding=0.001,
                  resample_padding=0.01,
@@ -22,6 +23,7 @@ class mipNeRF360(nn.Module):
         # parameters initialize
         self.randomized = randomized
         self.num_samples = num_samples
+        self.num_levels = num_levels
         self.hidden_proposal = hidden_proposal
         self.hidden_nerf = hidden_nerf
         self.density_bias = density_bias
@@ -82,6 +84,23 @@ class mipNeRF360(nn.Module):
         self.to(device)
     
     def forward(self,rays):
+        final_rgbs = []
+        final_dist = []
+        final_accs = []
+        # two stages: proposal network and nerf network
+        for l in range(self.num_levels):
+            if l == 0:
+                # stage 1: proposal network output density
+                s_vals, (mean, var) = sample_along_rays(rays.origins,rays.directions,rays.radii,self.num_samples,
+                                                        rays.near,rays.far,randomized=self.randomized,lindisp=False)
+            else: 
+                # stage 2: nerf network output density and 
+                s_vals, (mean, var) = resample_along_rays(rays.origins,rays.directions,rays.radii,
+                                                          s_vals.to(rays.origins.device),weights.to(rays.origins.device),
+                                                          randomized=self.randomized,stop_grad=True,resample_padding=self.resample_padding)
+                         
+
+
         return 0
     def render_image(self,rays,height,width,chunks=4096):
         return 0

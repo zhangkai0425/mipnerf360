@@ -9,7 +9,8 @@ from os import path
 from datasets import get_dataloader, cycle
 import numpy as np
 """
-其实这里是比较难的，需要
+其实这里是比较难的，需要写distillation训练策略，打算在distillation中封装一下
+包络损失的损失函数，其他细节函数
 """
 def train_model(config):
     model_save_path = path.join(config.log_dir, "model.pt")

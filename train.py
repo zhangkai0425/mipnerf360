@@ -8,9 +8,9 @@ import torch.utils.tensorboard as tb
 from os import path
 from datasets import get_dataloader, cycle
 import numpy as np
-from tqdm import tqdm
-
-
+"""
+其实这里是比较难的，需要
+"""
 def train_model(config):
     model_save_path = path.join(config.log_dir, "model.pt")
     optimizer_save_path = path.join(config.log_dir, "optim.pt")
@@ -39,7 +39,7 @@ def train_model(config):
     if config.continue_training:
         model.load_state_dict(torch.load(model_save_path))
         optimizer.load_state_dict(torch.load(optimizer_save_path))
-
+    # 学习率的退火算法，这个需要单独花半天时间去实现一下
     scheduler = MipLRDecay(optimizer, lr_init=config.lr_init, lr_final=config.lr_final, max_steps=config.max_steps, lr_delay_steps=config.lr_delay_steps, lr_delay_mult=config.lr_delay_mult)
     loss_func = NeRFLoss(config.coarse_weight_decay)
     model.train()

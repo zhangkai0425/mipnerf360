@@ -50,7 +50,7 @@ class prop_net(nn.Module):
         self.positional_encoding = PositionalEncoding(self.min_deg,self.max_deg)
         self.viewdirs_encoding = PositionalEncoding(self.viewdirs_min_deg,self.viewdirs_max_deg)
 
-        self.input_size = 0 #TODO: self.input
+        self.input_size = (self.max_deg - self.min_deg) * 3 * 2 + (self.viewdirs_max_deg-self.viewdirs_min_deg) * 2 * 2 #TODO: self.input
         self.density_activation = nn.Softplus()
 
         # proposal network: depth = 4 width = 256
@@ -119,7 +119,7 @@ class nerf_net(nn.Module):
         self.positional_encoding = PositionalEncoding(self.min_deg,self.max_deg)
         self.viewdirs_encoding = PositionalEncoding(self.viewdirs_min_deg,self.viewdirs_max_deg)
 
-        self.input_size = 0 #TODO: self.input
+        self.input_size = (self.max_deg - self.min_deg) * 3 * 2 + (self.viewdirs_max_deg-self.viewdirs_min_deg) * 2 * 2#TODO: self.input
         self.density_activation = nn.Softplus()
 
         # nerf network: depth = 8 width = 1024
@@ -214,7 +214,7 @@ class mipNeRF360(nn.Module):
                  viewdirs_max_deg=4,
                  device=torch.device("cuda"),
                  ):
-        super(mipNeRF360, self).__init__()
+        super().__init__()
 
         # parameters initialize
         self.randomized = randomized
@@ -233,50 +233,19 @@ class mipNeRF360(nn.Module):
 
         self.input_size = 0 #TODO: self.input
 
+
         # proposal network: depth = 4 width = 256
-        self.proposal = nn.Sequential(
-            nn.Linear(self.input_size,self.hidden_proposal),
-            nn.ReLU(True),
-            nn.Linear(self.hidden_proposal,self.hidden_proposal),
-            nn.ReLU(True),
-            nn.Linear(self.hidden_proposal,self.hidden_proposal),
-            nn.ReLU(True),
-            nn.Linear(self.hidden_proposal,self.hidden_proposal),
-            nn.ReLU(True),
-            nn.Linear(self.hidden_proposal,1) # output only density 
-        )
+        self.prop_net = prop_net(randomized=self.randomized,num_samples=self.num_samples,
+                        hidden_proposal=self.hidden_proposal,density_bias=self.density_bias,
+                        min_deg=self.min_deg,max_deg=self.max_deg,viewdirs_min_deg=self.viewdirs_min_deg,
+                        viewdirs_max_deg=self.viewdirs_max_deg,device=self.device)
 
         # nerf network: depth = 8 width = 1024
-        self.nerf = nn.Sequential(
-            nn.Linear(self.input_size,self.hidden_nerf),
-            nn.ReLU(True),
-            nn.Linear(self.hidden_nerf,self.hidden_nerf),
-            nn.ReLU(True),
-            nn.Linear(self.hidden_nerf,self.hidden_nerf),
-            nn.ReLU(True),
-            nn.Linear(self.hidden_nerf,self.hidden_nerf),
-            nn.ReLU(True),
-            nn.Linear(self.hidden_nerf,self.hidden_nerf),
-            nn.ReLU(True),
-            nn.Linear(self.hidden_nerf,self.hidden_nerf),
-            nn.ReLU(True),
-            nn.Linear(self.hidden_nerf,self.hidden_nerf),
-            nn.ReLU(True),
-            nn.Linear(self.hidden_nerf,self.hidden_nerf),
-            nn.Sigmoid()
-        )
-        # output the final density of nerf network
-        self.final_density = nn.Sequential(
-            nn.Linear(self.hidden_nerf,1),
-            nn.Sigmoid()
-        )   
-        # output the final color of nerf network
-        self.final_color = nn.Sequential(
-            nn.Linear(self.hidden_nerf,3),
-            nn.Sigmoid()
-        )
-        # initialize the model ang put the model to device
-        _kaiming_init(self)
+        self.nerf_net = nerf_net(randomized=self.randomized,num_samples=self.num_samples,
+                        hidden_nerf=self.hidden_nerf,density_bias=self.density_bias,rgb_padding=self.rgb_padding,
+                        resample_padding=self.resample_padding,min_deg=self.min_deg,max_deg=self.max_deg,
+                        viewdirs_min_deg=self.viewdirs_min_deg,viewdirs_max_deg=self.viewdirs_max_deg,device=self.device)
+
         self.to(device)
 
     def render_image(self,rays,height,width,chunks=4096):

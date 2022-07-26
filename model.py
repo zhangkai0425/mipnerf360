@@ -124,6 +124,7 @@ class nerf_net(nn.Module):
         self.viewdirs_encoding = PositionalEncoding(self.viewdirs_min_deg,self.viewdirs_max_deg)
 
         self.input_size = 0 #TODO: self.input
+        self.density_activation = nn.Softplus()
 
         # nerf network: depth = 8 width = 1024
         self.model = nn.Sequential(
@@ -162,7 +163,6 @@ class nerf_net(nn.Module):
         final_rgbs = []
         final_dist = []
         final_accs = []
-        
         # sample
         # 根据proposal net预测结果进行重采样 TODO:此处最难！最难！
         s_vals,(mean,var) = resample_along_rays(rays.origins,rays.directions,rays.radii,
@@ -271,33 +271,11 @@ class mipNeRF360(nn.Module):
         # initialize the model ang put the model to device
         _kaiming_init(self)
         self.to(device)
-    
-    def forward(self,rays):
-        final_rgbs = []
-        final_dist = []
-        final_accs = []
-        # two stages: proposal network and nerf network
-        for l in range(self.num_levels):
-            if l == 0:
-                # stage 1: proposal network output density
-                s_vals, (mean, var) = sample_along_rays(rays.origins,rays.directions,rays.radii,self.num_samples,
-                                                        rays.near,rays.far,randomized=self.randomized,lindisp=False)
-            else: 
-                # stage 2: nerf network output density and 
-                s_vals, (mean, var) = resample_along_rays(rays.origins,rays.directions,rays.radii,
-                                                          s_vals.to(rays.origins.device),weights.to(rays.origins.device),
-                                                          randomized=self.randomized,stop_grad=True,resample_padding=self.resample_padding)
-            # integrated positional encoding(IPE) of samples
-            samples_enc = self.postional
-                    
 
-
-        return 0
     def render_image(self,rays,height,width,chunks=4096):
         return 0
     
         
-
 
 
 

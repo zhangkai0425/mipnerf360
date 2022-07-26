@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from positional_encoding import PositionalEncoding
 from torch.nn.modules.activation import Sigmoid
 
 def _kaiming_init(model):
@@ -48,6 +49,11 @@ class prop_net(nn.Module):
         self.viewdirs_min_deg = viewdirs_min_deg
         self.viewdirs_max_deg = viewdirs_max_deg
         self.device = device
+
+        # IPE module
+        self.positional_encoding = PositionalEncoding(self.min_deg,self.max_deg)
+        self.
+
 
         self.input_size = 0 #TODO: self.input
 
@@ -147,7 +153,9 @@ class nerf_net(nn.Module):
     
 
 
-
+"""[summary]
+计划把render实现在mipnerf360中
+"""
 class mipNeRF360(nn.Module):
     def __init__(self,
                  randomized=False,

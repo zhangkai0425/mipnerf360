@@ -57,8 +57,9 @@ class prop_net(nn.Module):
         # initialize the model ang put the model to device
         _kaiming_init(self)
         self.to(device)
+    
     def forward(self,rays):
-
+        return 0
 
 class nerf_net(nn.Module):
     def __init__(self,
@@ -90,7 +91,7 @@ class nerf_net(nn.Module):
         self.device = device
 
         self.input_size = 0 #TODO: self.input
-        
+
         # nerf network: depth = 8 width = 1024
         self.nerf = nn.Sequential(
             nn.Linear(self.input_size,self.hidden_nerf),
@@ -123,6 +124,13 @@ class nerf_net(nn.Module):
         # initialize the model ang put the model to device
         _kaiming_init(self)
         self.to(device)
+    
+    def forward(self,rays):
+        
+        
+        
+        return 0
+    
 
 
 

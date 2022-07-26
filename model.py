@@ -13,7 +13,17 @@ def _kaiming_init(model):
     for module in model.modules():
         if isinstance(module,nn.Linear):
             nn.init.kaiming_uniform_(module.weight)
-
+"""
+    还是有一些基本的想法：
+    1.IPE的部分需要完成，但是需要完成在哪里呢？是否需要重新建一个文件呢？
+    我认为是必要的，需要重建一个单独的postional_encoding.py，单独存这个东西
+    这个的好处是什么呢？是非常直观，之后的修改代码也很容易
+    还是那句话，架构务必要清晰
+    2.第二点，需要把两个类的forward函数均完成，这一点可以采样函数先不真正实现，
+    实现之后再具体实现采样函数
+    3.实现完输入输出之后，在mipnerf360类中封装一下两个net，力求简洁
+    4.下午最后一个任务是实现train.py中的蒸馏学习策略单元，这一点也比较麻烦
+"""
 class prop_net(nn.Module):
     def __init__(self,
                  randomized=False,
@@ -59,6 +69,10 @@ class prop_net(nn.Module):
         self.to(device)
     
     def forward(self,rays):
+        s_vals, (mean, var) = sample_along_rays(rays.origins,rays.directions,rays.radii,self.num_samples,
+                                                        rays.near,rays.far,randomized=self.randomized,lindisp=False)
+        # integrated postional encoding(IPE) of samples
+        samples_enc = self.
         return 0
 
 class nerf_net(nn.Module):

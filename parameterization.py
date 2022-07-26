@@ -62,12 +62,6 @@ def gaussian_contract(mean,cov):
 
     return mean, cov
 
-
-
-
-
-
-
 def conical_frustum_to_gaussian(d, t0, t1, base_radius, diag, stable=True):
     """[summary]
     approximate a conical frustum as a Gaussion distribution (mean+cov)

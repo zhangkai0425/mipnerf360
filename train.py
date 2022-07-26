@@ -20,15 +20,11 @@ def train_model(config):
     if config.do_eval:
         eval_data = iter(cycle(get_dataloader(dataset_name=config.dataset_name, base_dir=config.base_dir, split="test", factor=config.factor, batch_size=config.batch_size, shuffle=True, device=config.device)))
 
-    model = MipNeRF(
-        use_viewdirs=config.use_viewdirs,
+    model = mipNeRF360(
         randomized=config.randomized,
-        ray_shape=config.ray_shape,
-        white_bkgd=config.white_bkgd,
-        num_levels=config.num_levels,
         num_samples=config.num_samples,
-        hidden=config.hidden,
-        density_noise=config.density_noise,
+        hidden_proposal=config.hidden_proposal,
+        hidden_nerf=config.hidden_nerf,
         density_bias=config.density_bias,
         rgb_padding=config.rgb_padding,
         resample_padding=config.resample_padding,
@@ -36,8 +32,9 @@ def train_model(config):
         max_deg=config.max_deg,
         viewdirs_min_deg=config.viewdirs_min_deg,
         viewdirs_max_deg=config.viewdirs_max_deg,
-        device=config.device,
+        device=config.device
     )
+    
     optimizer = optim.AdamW(model.parameters(), lr=config.lr_init, weight_decay=config.weight_decay)
     if config.continue_training:
         model.load_state_dict(torch.load(model_save_path))

@@ -2,15 +2,11 @@ import torch
 import torch.nn as nn
 from positional_encoding import PositionalEncoding
 from torch.nn.modules.activation import Sigmoid
-
+"""
+加快进度！加快进度！加快进度！每天没有达到25个commit不可以睡觉！谁睡觉，谁就是敌人！
+"""
 def _kaiming_init(model):
-    """perform kaiming initialization to the model
-    Arguments:
-        model,nn.module
-
-    Returns:
-        model,nn.module
-    """
+    """perform kaiming initialization to the model"""
     for module in model.modules():
         if isinstance(module,nn.Linear):
             nn.init.kaiming_uniform_(module.weight)
@@ -181,13 +177,24 @@ class nerf_net(nn.Module):
         # volumetric rendering
         rgb = raw_rgb * (1 + 2 * self.rgb_padding) - self.rgb_padding
         density = self.density_activation(raw_density + self.density_bias)
+        comp_rgb,distance,acc,weights,alpha = volumetric_rendering(rgb, density, s_vals, rays.directions.to(rgb.device))
+        
+        final_rgbs.append(comp_rgb)
+        final_dist.append(distance)
+        final_accs.append(acc)
 
+        # save the weights of nerf_net,used in the distillation section
+        self.weights = weights
 
-
-
-        return 0
-    
-
+        # return everything 
+        if self.return_raw:
+            raws = torch.cat((torch.clone(rgb).detach(), torch.clone(density).detach()), -1).cpu()
+            # Predicted RGB values for rays, Disparity map (inverse of depth), Accumulated opacity (alpha) along a ray
+            return torch.stack(final_rgbs), torch.stack(final_dist), torch.stack(final_accs), raws
+        else:
+            # Predicted RGB values for rays, Disparity map (inverse of depth), Accumulated opacity (alpha) along a ray
+            return torch.stack(final_rgbs), torch.stack(final_dist), torch.stack(final_accs)
+        
 """[summary]
 计划把render实现在mipnerf360中
 """

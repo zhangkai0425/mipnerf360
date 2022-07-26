@@ -202,7 +202,6 @@ class mipNeRF360(nn.Module):
     def __init__(self,
                  randomized=False,
                  num_samples=128,
-                 num_levels=2,
                  hidden_proposal=256,
                  hidden_nerf=1024,
                  density_bias=-1,
@@ -219,7 +218,6 @@ class mipNeRF360(nn.Module):
         # parameters initialize
         self.randomized = randomized
         self.num_samples = num_samples
-        self.num_levels = num_levels
         self.hidden_proposal = hidden_proposal
         self.hidden_nerf = hidden_nerf
         self.density_bias = density_bias

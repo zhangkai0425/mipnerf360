@@ -52,13 +52,13 @@ class prop_net(nn.Module):
 
         # IPE module
         self.positional_encoding = PositionalEncoding(self.min_deg,self.max_deg)
-        self.
-
+        self.viewdirs_encoding = PositionalEncoding(self.viewdirs_min_deg,self.viewdirs_max_deg)
 
         self.input_size = 0 #TODO: self.input
+        self.density_activation = nn.Softplus()
 
         # proposal network: depth = 4 width = 256
-        self.proposal = nn.Sequential(
+        self.model = nn.Sequential(
             nn.Linear(self.input_size,self.hidden_proposal),
             nn.ReLU(True),
             nn.Linear(self.hidden_proposal,self.hidden_proposal),
@@ -75,11 +75,20 @@ class prop_net(nn.Module):
         self.to(device)
     
     def forward(self,rays):
+        #TODO: sample_along_rays很难实现，真的
+        # sample
         s_vals, (mean, var) = sample_along_rays(rays.origins,rays.directions,rays.radii,self.num_samples,
                                                         rays.near,rays.far,randomized=self.randomized,lindisp=False)
         # integrated postional encoding(IPE) of samples
-        samples_enc = self.
-        return 0
+        samples_enc = self.positional_encoding(mean,var)
+        viewdirs_enc = self.viewdirs_encoding(rays.viewdirs.to(self.device))
+        input_enc = torch.cat((samples_enc,viewdirs_enc),-1)
+
+        # predict density
+        raw_density = self.model(input_enc)
+        density = self.density_activation(raw_density + self.density_bias)
+    
+        return s_vals,density
 
 class nerf_net(nn.Module):
     def __init__(self,
@@ -110,10 +119,14 @@ class nerf_net(nn.Module):
         self.viewdirs_max_deg = viewdirs_max_deg
         self.device = device
 
+        # IPE module
+        self.positional_encoding = PositionalEncoding(self.min_deg,self.max_deg)
+        self.viewdirs_encoding = PositionalEncoding(self.viewdirs_min_deg,self.viewdirs_max_deg)
+
         self.input_size = 0 #TODO: self.input
 
         # nerf network: depth = 8 width = 1024
-        self.nerf = nn.Sequential(
+        self.model = nn.Sequential(
             nn.Linear(self.input_size,self.hidden_nerf),
             nn.ReLU(True),
             nn.Linear(self.hidden_nerf,self.hidden_nerf),
@@ -145,13 +158,35 @@ class nerf_net(nn.Module):
         _kaiming_init(self)
         self.to(device)
     
-    def forward(self,rays):
+    def forward(self,rays,s_vals,weights):
+        final_rgbs = []
+        final_dist = []
+        final_accs = []
         
+        # sample
+        # 根据proposal net预测结果进行重采样 TODO:此处最难！最难！
+        s_vals,(mean,var) = resample_along_rays(rays.origins,rays.directions,rays.radii,
+                            s_vals.to(rays.origins.device))
         
-        
+        # integrated postional encoding(IPE) of samples
+        samples_enc = self.positional_encoding(mean,var)
+        viewdirs_enc = self.viewdirs_encoding(rays.viewdirs.to(self.device))
+        input_enc = torch.cat((samples_enc,viewdirs_enc),-1)
+
+        # predict density and color
+        feature = self.model(input_enc)
+        raw_density = self.final_density(feature)
+        raw_rgb = self.final_color(feature)
+
+        # volumetric rendering
+        rgb = raw_rgb * (1 + 2 * self.rgb_padding) - self.rgb_padding
+        density = self.density_activation(raw_density + self.density_bias)
+
+
+
+
         return 0
     
-
 
 """[summary]
 计划把render实现在mipnerf360中

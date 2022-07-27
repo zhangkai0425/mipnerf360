@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from positional_encoding import PositionalEncoding
+from positional_encoding import PositionalEncoding,ViewdirectionEncoding
 from torch.nn.modules.activation import Sigmoid
 """
 加快进度！加快进度！加快进度！每天没有达到25个commit不可以睡觉！谁睡觉，谁就是敌人！
@@ -10,25 +10,13 @@ def _kaiming_init(model):
     for module in model.modules():
         if isinstance(module,nn.Linear):
             nn.init.kaiming_uniform_(module.weight)
-"""
-    还是有一些基本的想法：
-    1.IPE的部分需要完成，但是需要完成在哪里呢？是否需要重新建一个文件呢？
-    我认为是必要的，需要重建一个单独的postional_encoding.py，单独存这个东西
-    这个的好处是什么呢？是非常直观，之后的修改代码也很容易
-    还是那句话，架构务必要清晰
-    2.第二点，需要把两个类的forward函数均完成，这一点可以采样函数先不真正实现，
-    实现之后再具体实现采样函数
-    3.实现完输入输出之后，在mipnerf360类中封装一下两个net，力求简洁
-    4.下午最后一个任务是实现train.py中的蒸馏学习策略单元，这一点也比较麻烦
-"""
+
 class prop_net(nn.Module):
     def __init__(self,
                  randomized=False,
                  num_samples=128,
                  hidden_proposal=256,
                  density_bias=-1,
-                 min_deg=0,
-                 max_deg=16,
                  viewdirs_min_deg=0,
                  viewdirs_max_deg=4,
                  device=torch.device("cuda"),
@@ -40,17 +28,15 @@ class prop_net(nn.Module):
         self.num_samples = num_samples
         self.hidden_proposal = hidden_proposal
         self.density_bias = density_bias
-        self.min_deg = min_deg
-        self.max_deg = max_deg
         self.viewdirs_min_deg = viewdirs_min_deg
         self.viewdirs_max_deg = viewdirs_max_deg
         self.device = device
 
         # IPE module
-        self.positional_encoding = PositionalEncoding(self.min_deg,self.max_deg)
-        self.viewdirs_encoding = PositionalEncoding(self.viewdirs_min_deg,self.viewdirs_max_deg)
+        self.positional_encoding = PositionalEncoding()
+        self.viewdirs_encoding = ViewdirectionEncoding(self.viewdirs_min_deg,self.viewdirs_max_deg)
 
-        self.input_size = (self.max_deg - self.min_deg) * 3 * 2 + (self.viewdirs_max_deg-self.viewdirs_min_deg) * 2 * 2 #TODO: self.input
+        self.input_size = 21*3*2 + (self.viewdirs_max_deg-self.viewdirs_min_deg) * 2 * 2 #TODO: self.input
         self.density_activation = nn.Softplus()
 
         # proposal network: depth = 4 width = 256
@@ -77,7 +63,8 @@ class prop_net(nn.Module):
                                                         rays.near,rays.far,randomized=self.randomized,lindisp=False)
         # integrated postional encoding(IPE) of samples
         samples_enc = self.positional_encoding(mean,var)
-        viewdirs_enc = self.viewdirs_encoding(rays.viewdirs.to(self.device))
+        theta,phi = rays.viewdirs.to(self.device)
+        viewdirs_enc = self.viewdirs_encoding(theta,phi)
         input_enc = torch.cat((samples_enc,viewdirs_enc),-1)
 
         # predict density
@@ -94,10 +81,8 @@ class nerf_net(nn.Module):
                  density_bias=-1,
                  rgb_padding=0.001,
                  resample_padding=0.01,
-                 min_deg=0,
-                 max_deg=16,
-                 viewdirs_min_deg=0,
-                 viewdirs_max_deg=4,
+                 viewdir_min_deg=0,
+                 viewdir_max_deg=4,
                  device=torch.device("cuda"),
                  ):
         super().__init__()  
@@ -109,19 +94,16 @@ class nerf_net(nn.Module):
         self.density_bias = density_bias
         self.rgb_padding = rgb_padding
         self.resample_padding = resample_padding
-        self.min_deg = min_deg
-        self.max_deg = max_deg
-        self.viewdirs_min_deg = viewdirs_min_deg
-        self.viewdirs_max_deg = viewdirs_max_deg
+        self.viewdir_min_deg = viewdir_min_deg
+        self.viewdir_max_deg = viewdir_max_deg
         self.device = device
 
         # IPE module
-        self.positional_encoding = PositionalEncoding(self.min_deg,self.max_deg)
-        self.viewdirs_encoding = PositionalEncoding(self.viewdirs_min_deg,self.viewdirs_max_deg)
+        self.positional_encoding = PositionalEncoding()
+        self.viewdirs_encoding = ViewdirectionEncoding(self.viewdir_min_deg,self.viewdir_max_deg)
 
-        self.input_size = (self.max_deg - self.min_deg) * 3 * 2 + (self.viewdirs_max_deg-self.viewdirs_min_deg) * 2 * 2#TODO: self.input
+        self.input_size = 21*3*2 + (self.viewdirs_max_deg-self.viewdirs_min_deg) * 2 * 2 
         self.density_activation = nn.Softplus()
-
         # nerf network: depth = 8 width = 1024
         self.model = nn.Sequential(
             nn.Linear(self.input_size,self.hidden_nerf),
@@ -165,8 +147,8 @@ class nerf_net(nn.Module):
                             s_vals.to(rays.origins.device))
         
         # integrated postional encoding(IPE) of samples
-        samples_enc = self.positional_encoding(mean,var)
-        viewdirs_enc = self.viewdirs_encoding(rays.viewdirs.to(self.device))
+        samples_enc = self.positional_encoding(mean=mean,var=var)
+        viewdirs_enc = self.viewdirs_encoding(view_dir=True,theta=rays.viewdirs.to(self.device))
         input_enc = torch.cat((samples_enc,viewdirs_enc),-1)
 
         # predict density and color
@@ -194,10 +176,7 @@ class nerf_net(nn.Module):
         else:
             # Predicted RGB values for rays, Disparity map (inverse of depth), Accumulated opacity (alpha) along a ray
             return torch.stack(final_rgbs), torch.stack(final_dist), torch.stack(final_accs)
-        
-"""[summary]
-计划把render实现在mipnerf360中
-"""
+
 class mipNeRF360(nn.Module):
     def __init__(self,
                  randomized=False,
@@ -248,9 +227,3 @@ class mipNeRF360(nn.Module):
 
     def render_image(self,rays,height,width,chunks=4096):
         return 0
-    
-        
-
-
-
-# 拓展到200行，提交10个commit

@@ -1,10 +1,8 @@
 import torch
 import torch.nn as nn
-from positional_encoding import PositionalEncoding,ViewdirectionEncoding
+from encoding import PositionalEncoding,ViewdirectionEncoding
 from torch.nn.modules.activation import Sigmoid
-"""
-加快进度！加快进度！加快进度！每天没有达到25个commit不可以睡觉！谁睡觉，谁就是敌人！
-"""
+
 def _kaiming_init(model):
     """perform kaiming initialization to the model"""
     for module in model.modules():
@@ -104,7 +102,7 @@ class nerf_net(nn.Module):
 
         self.input_size = 21*3*2 + (self.viewdir_max_deg-self.viewdir_min_deg) * 2 * 2 
         self.density_activation = nn.Softplus()
-        
+
         # nerf network: depth = 8 width = 1024
         self.model = nn.Sequential(
             nn.Linear(self.input_size,self.hidden_nerf),
@@ -210,7 +208,6 @@ class mipNeRF360(nn.Module):
         self.device = device
 
         self.input_size = 0 #TODO: self.input
-
 
         # proposal network: depth = 4 width = 256
         self.prop_net = prop_net(randomized=self.randomized,num_samples=self.num_samples,

@@ -102,8 +102,9 @@ class nerf_net(nn.Module):
         self.positional_encoding = PositionalEncoding()
         self.viewdirs_encoding = ViewdirectionEncoding(self.viewdir_min_deg,self.viewdir_max_deg)
 
-        self.input_size = 21*3*2 + (self.viewdirs_max_deg-self.viewdirs_min_deg) * 2 * 2 
+        self.input_size = 21*3*2 + (self.viewdir_max_deg-self.viewdir_min_deg) * 2 * 2 
         self.density_activation = nn.Softplus()
+        
         # nerf network: depth = 8 width = 1024
         self.model = nn.Sequential(
             nn.Linear(self.input_size,self.hidden_nerf),

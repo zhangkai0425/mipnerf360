@@ -67,6 +67,7 @@ class ViewdirectionEncoding(nn.Module):
         Arguments:
             theta,torch.float32,shape(batch_size,num_samples,1),view direction theta of each samples
             phi,torch.float32,shape(batch_size,num_samples,1),view direction phi of each samples
+            
         Returns:
             enc,torch.float32,shape(batch_size,num_samples,(viewdir_max_deg-viewdir_min_deg)*2,1),viewdirection_encoding
         """

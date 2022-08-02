@@ -78,6 +78,51 @@ def convert_to_ndc(origins,directions,focal,w,h,near=1.0):
     directions = np.stack([d0, d1, d2], -1)
     return origins, directions
 
+def sample_along_rays(origins,directions,radii,num_samples,near,far,randomized,lindisp,ray_shape):
+    """[summary]
 
+    Arguments:
+        origins:torch.tensor(float32),[batch_size,3],ray origins.
+        directions:torch.tensor(float32),[batch_size,3],ray directions.
+        radii:torch.tensor(float32),[batch_size,1],ray radii.
+        num_samples:int,number of samples.
+        near:torch.tensor,[batch_size,1],near clip.
+        far:torch.tensor,[batch_size,1],far clip.
+        randomized:bool,use randomized stratified sampling.
+        lindisp:bool,sampling linearly in disparity rather than depth.
+        ray_shape:torch.Size,shape of rays
+    
+    Returns:
+        t_vals:torch.tensor,[batch_size,num_samples],sampled z values.
+        means:torch.tensor,[batch_size,num_samples,3],sampled means.
+        covs:torch.tensor,[batch_size,num_samples,3,3],sampled covariances.
+    """
+    batch_size = origins.shape[0]
+
+    t_vals = torch.linspace(0.,1,num_samples + 1,device=origins.device)
+    # 基本只需要在这上面改就行
+    # 需要做的点有以下几点：
+    # 1.构造一个g(s)的函数映射，及其逆映射
+    # 2.s上均匀采样后，返回x空间
+    # 3.看看有没有其他细节需要补充，就可以封装了
+    # 4.写好resample部分，即
+    if lindisp:
+        t_vals = 1. / (1. / near * (1. - t_vals) + 1. / far * t_vals)
+    else:
+        t_vals = near * (1. - t_vals) + far * t_vals
+    
+    if randomized:
+        mids = 0.5 * (t_vals[...,1:] + t_vals[...:-1])
+        upper = torch.cat([mids,t_vals[...,-1:]],-1)
+        lower = torch.cat([t_vals[...,:1],mids],-1)
+        t_rand = torch.rand(batch_size,num_samples+1,device=origins.device)
+        t_vals = lower + (upper-lower) * t_rand
+    else:
+        # Broadcast t_vals to make the returned shape consistant
+        t_vals = torch.broadcast_to(t_vals,[batch_size,num_samples + 1])
+    means,covs = cast_rays(t_vals,origins,directions,radii,ray_shape)
+    return t_vals,(means,covs)
     
     
+
+

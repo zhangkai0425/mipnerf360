@@ -103,7 +103,7 @@ def conical_frustum_to_gaussian(d, t0, t1, base_radius, diag, stable=True):
     
     return mean,cov
 
-def para_rays(t_vals,origins,directions,radii,ray_shape,diag=False):
+def para_rays(t_vals,origins,directions,radii,diag=False):
     """parameterize rays and return means and covs.
 
     Arguments:
@@ -111,7 +111,6 @@ def para_rays(t_vals,origins,directions,radii,ray_shape,diag=False):
         origins:torch.tensor(float32),[batch_size,3],ray origins.
         directions:torch.tensor(float32),[batch_size,3],ray directions.
         radii:torch.tensor(float32),[batch_size,1],ray radii.
-        ray_shape:torch.Size,shape of rays
     
     Returns:
         means:torch.tensor,[batch_size,num_samples,3],sampled means.

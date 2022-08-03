@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 from collections import namedtuple
-from parameterization import g,conical_frustum_to_gaussian
+from parameterization import g,conical_frustum_to_gaussian,para_rays
 
 Rays = namedtuple('Rays',('origins','directions','viewdirs','radii','near','far'))
 
@@ -78,7 +78,7 @@ def convert_to_ndc(origins,directions,focal,w,h,near=1.0):
     directions = np.stack([d0, d1, d2], -1)
     return origins, directions
 
-def sample_along_rays(origins,directions,radii,num_samples,near,far,randomized,lindisp,ray_shape):
+def sample_along_rays(origins,directions,radii,num_samples,near,far,ray_shape):
     """[summary]
 
     Arguments:
@@ -88,8 +88,6 @@ def sample_along_rays(origins,directions,radii,num_samples,near,far,randomized,l
         num_samples:int,number of samples.
         near:torch.tensor,[batch_size,1],near clip.
         far:torch.tensor,[batch_size,1],far clip.
-        randomized:bool,use randomized stratified sampling.
-        lindisp:bool,sampling linearly in disparity rather than depth.
         ray_shape:torch.Size,shape of rays
     
     Returns:
@@ -99,23 +97,15 @@ def sample_along_rays(origins,directions,radii,num_samples,near,far,randomized,l
     """
     batch_size = origins.shape[0]
 
-    t_vals = torch.linspace(0.,1,num_samples + 1,device=origins.device)
-    # 基本只需要在这上面改就行
-    # 需要做的点有以下几点：
-    # 1.构造一个g(s)的函数映射，及其逆映射
-    # 2.s上均匀采样后，返回x空间
-    # 3.看看有没有其他细节需要补充，就可以封装了
-    # 4.写好resample部分，即
-    # mipnerf360部分
-
-    # padding to avoid 1/zero
+    # mipnerf360 sample strategy
     s_vals = torch.linspace(0.,1,num_samples + 1,device=origins.device)
     t_vals = g(s_vals * g(far) + (1-s_vals) * g(near))
     t_vals = torch.broadcast_to(t_vals,[batch_size,num_samples + 1])
-
-    means,covs = cast_rays(t_vals,origins,directions,radii,ray_shape)
+    #TODO: do not use diag matrix?
+    means,covs = para_rays(t_vals=t_vals,origins=origins,directions=directions,radii=radii,ray_shape=ray_shape,diag=False)
+    
     return t_vals,(means,covs)
 
-    
+
 
 

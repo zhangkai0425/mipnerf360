@@ -19,11 +19,12 @@ def g(x):
 
 def contract(x):
     """contract function of x,used in parameterization
+
     Arguments:
-        x {[torch.tensor]} -- the parameter of t along the ray
+        x:torch.tensor,the parameter of t along the ray
 
     Returns:
-        [contracted x] -- x contracted to a zone with the radius of 2
+        contracted x:torch.tensor,x contracted to a sphere with the radius of 2
     """
     x_norm = torch.norm(x)
     if x_norm <= 1:
@@ -33,12 +34,17 @@ def contract(x):
 
 def gaussian_to_xyz(d, t_mean, t_var, r_var, diag=False):
     """lift a gaussian of conical axis to xyz axis
+
     Arguments:
-        d:torch.float32 3-vector,the axis of the cone of each rays
-        t_mean:float,t_mean of each intervals
-        t_var:float,t_var of each intervals
-        r_var:float,r_var of each intervals
-        diag:Bool,whether use diag to approximate the matrix
+        d:torch.tensor(float32),[batch_size,3],ray directions.
+        t_mean:torch.tensor(float32),[batch_size,1],t_mean of each intervals
+        t_var:torch.tensor(float32),[batch_size,1],t_var of each intervals
+        r_var:torch.tensor(float32),[batch_size,1],r_var of each intervals
+        diag:boolean, whether or the Gaussian will be diagonal or full-covariance.
+    
+    Returns:
+        means:torch.tensor,[batch_size,num_samples,3],sampled means.
+        covs:torch.tensor,[batch_size,num_samples,3,3],sampled covariances.
     """
     mean = d[...,None,:] * t_mean[...,None]
 
@@ -78,17 +84,18 @@ def gaussian_contract(mean,cov):
     return mean, cov
 
 def conical_frustum_to_gaussian(d, t0, t1, base_radius, diag, stable=True):
-    """[summary]
-    approximate a conical frustum as a Gaussion distribution (mean+cov)
+    """Approximate a conical frustum as a contracted Gaussian distribution (mean+cov).
+    
     Arguments:
-        d {[torch.tensor]} -- [description]
-        t0 {[type]} -- [description]
-        t1 {[type]} -- [description]
-        base_radius {[type]} -- [description]
-        diag {[type]} -- [description]
+        d:torch.tensor(float32),[batch_size,3],ray directions.
+        t0:torch.tensor(float32),[batch_size,1],the starting distance of the frustum.
+        t1:torch.tensor(float32),[batch_size,1],the ending distance of the frustum.
+        base_radius:torch.tensor(float32),[batch_size,1],the scale of the radius as a function of distance.
+        diag:boolean, whether or the Gaussian will be diagonal or full-covariance.
+        stable:boolean, whether or not to use the stable computation described in the mipnerf paper (setting this to False will cause catastrophic failure).
 
-    Keyword Arguments:
-        stable {bool} -- [description] (default: {True})
+    Returns:
+        a contracted Gaussian (mean and covariance).
     """
     if stable: 
         # stable method used in mipnerf
@@ -111,14 +118,18 @@ def conical_frustum_to_gaussian(d, t0, t1, base_radius, diag, stable=True):
     return mean,cov
 
 def para_rays(t_vals,origins,directions,radii,ray_shape,diag=False):
-    """parameterize rays and return means and covs
+    """parameterize rays and return means and covs.
 
     Arguments:
-        t_vals {[type]} -- [description]
-        origins {[type]} -- [description]
-        directions {[type]} -- [description]
-        radii {[type]} -- [description]
-        ray_shape {[type]} -- [description]
+        t_vals:torch.tensor,[batch_size,num_samples],sampled z values.
+        origins:torch.tensor(float32),[batch_size,3],ray origins.
+        directions:torch.tensor(float32),[batch_size,3],ray directions.
+        radii:torch.tensor(float32),[batch_size,1],ray radii.
+        ray_shape:torch.Size,shape of rays
+    
+    Returns:
+        means:torch.tensor,[batch_size,num_samples,3],sampled means.
+        covs:torch.tensor,[batch_size,num_samples,3,3],sampled covariances.
     """
     t0 = t_vals[..., :-1]
     t1 = t_vals[..., 1:]

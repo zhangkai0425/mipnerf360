@@ -9,9 +9,15 @@ from os import path
 from datasets import get_dataloader, cycle
 import numpy as np
 """
+先写loss_prop损失函数，争取用一上午完成；再写蒸馏训练策略，下午完成
+detach函数固定A的输出
 其实这里是比较难的，需要写distillation训练策略，打算在distillation中封装一下
 包络损失的损失函数，其他细节函数
 """
+"""
+代码量完全不够！今天务必将train.py基本完成，主要集中于蒸馏的策略
+"""
+
 def train_model(config):
     model_save_path = path.join(config.log_dir, "model.pt")
     optimizer_save_path = path.join(config.log_dir, "optim.pt")
@@ -29,12 +35,13 @@ def train_model(config):
         density_bias=config.density_bias,
         rgb_padding=config.rgb_padding,
         resample_padding=config.resample_padding,
-        min_deg=config.min_deg,
-        max_deg=config.max_deg,
         viewdirs_min_deg=config.viewdirs_min_deg,
         viewdirs_max_deg=config.viewdirs_max_deg,
         device=config.device
     )
+    # 明天写这部分
+    model.nerf_net.forward()
+    model.prop_net.forward()
     
     optimizer = optim.AdamW(model.parameters(), lr=config.lr_init, weight_decay=config.weight_decay)
     if config.continue_training:

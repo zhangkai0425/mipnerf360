@@ -5,7 +5,7 @@ import torch
 import numpy as np
 from os import path
 from PIL import Image
-from ray import Rays,convert_to_ndc,namedtuple
+from ray import Rays,convert_to_ndc,namedtuple_map
 from torch.utils.data import Dataset, DataLoader
 
 dataset_dict = {
@@ -65,7 +65,6 @@ class NeRFDataset(Dataset):
 
         self.flatten_to_pytorch()
         print('Done')
-        print()
 
     def generate_training_poses(self):
         """
@@ -75,9 +74,7 @@ class NeRFDataset(Dataset):
         raise ValueError('no generate_training_poses(self).')
 
     def generate_render_poses(self):
-        """
-        Generate arbitrary poses (views)
-        """
+        """Generate arbitrary poses (views)"""
         self.focal = 1200
         self.n_poses = self.n_poses_copy
         if self.spherify:
@@ -106,7 +103,6 @@ class NeRFDataset(Dataset):
         Generates rays used to render a video using a trained mip-NeRF
         """
         print("Generating Render Poses")
-        print("哈哈")
         self.generate_render_poses()
         print("Generating rays")
         self.generate_rays()
@@ -144,11 +140,12 @@ class NeRFDataset(Dataset):
             directions=directions,
             viewdirs=viewdirs,
             radii=radii,
-            lossmult=ones,
             near=ones * self.near,
-            far=ones * self.far)
+            far=ones * self.far
+            )
 
     def flatten_to_pytorch(self):
+        # flatten the data,making it easy to index
         if self.rays is not None:
             self.rays = namedtuple_map(lambda r: torch.tensor(r).float().reshape([-1, r.shape[-1]]), self.rays)
         if self.images is not None:
@@ -161,10 +158,10 @@ class NeRFDataset(Dataset):
         ray = namedtuple_map(lambda r: r[i], self.rays)
         if self.split == "render":
             # render rays
-            return ray  # Don't put on device, will batch it using config.chunks in mipNeRF.render_image() function
+            return ray  # Don't put on device, will batch it using config.chunks in mipNeRF.render_image() function.
         else:
             # training rays
-            pixel = self.images[i]  # Don't put pixel on device yet, waste of space
+            pixel = self.images[i]  # Don't put pixel on device yet, waste of space.
             return self.ray_to_device(ray), pixel
 
     def __len__(self):

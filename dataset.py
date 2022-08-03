@@ -259,6 +259,7 @@ class LLFF(NeRFDataset):
         self.n_poses = images.shape[0]
     
     def generate_render_poses(self):
+        print("Generating render poses")
         self.generate_training_poses()
         self.n_poses = self.n_poses_copy  # get overwritten in generate_training_poses, change back to original
         if self.spherify:
@@ -268,3 +269,32 @@ class LLFF(NeRFDataset):
         self.cam_to_world = self.poses[:, :3, :4]
         self.focal = self.poses[0, -1, -1]
     
+    def generate_training_rays(self):
+        print("Loading training poses")
+        self.generate_training_poses()
+        if self.split == "train":
+            indices = [i for i in np.arange(self.images.shape[0]) if i not in np.arange(self.images.shape[0])[::8]]
+        else:
+            indices = np.arange(self.images.shape[0])[::8]
+        self.images = self.images[indices]
+        self.poses = self.poses[indices]
+        self.cam_to_world = self.poses[:, :3, :4]
+        self.focal = self.poses[0, -1, -1]
+        print("Generating rays")
+        self.generate_rays()
+    #TODO:今天的任务就是写完dataset,然后去看resample函数
+    #之后干什么呢？dataset和resample写完之后，就准备写蒸馏策略
+    #明天周四完全写完蒸馏训练策略
+    #后天周五完全写完正则化过程
+    #周六完善
+    #周日跑通pipline
+    #周一完善，跑通
+    #周二完善，跑通
+    #周三完善，跑通
+    #周四完善，跑通
+    #周五完善，跑通
+    #周六完善，跑通，写文档
+    #周日完善，跑通，写文档
+    #周一完善，写文档，准备材料
+    #周二完善，写文档，准备离职
+    #周三离职，

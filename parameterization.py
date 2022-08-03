@@ -4,6 +4,7 @@ from torch.autograd.functional import jacobian
 
 def g(x):
     """compute the disparity of x:g(x)=1/x
+
     Arguments:
         x:torch.tensor(float32),distance along the ray
 
@@ -109,5 +110,20 @@ def conical_frustum_to_gaussian(d, t0, t1, base_radius, diag, stable=True):
     
     return mean,cov
 
+def para_rays(t_vals,origins,directions,radii,ray_shape,diag=False):
+    """parameterize rays and return means and covs
+
+    Arguments:
+        t_vals {[type]} -- [description]
+        origins {[type]} -- [description]
+        directions {[type]} -- [description]
+        radii {[type]} -- [description]
+        ray_shape {[type]} -- [description]
+    """
+    t0 = t_vals[..., :-1]
+    t1 = t_vals[..., 1:]
+    means, covs = conical_frustum_to_gaussian(d=directions,t0=t0,t1=t1,base_radius=radii,diag=diag,stable=True)
+    means = means + origins[...,None,:]
+    return means,covs
 
 

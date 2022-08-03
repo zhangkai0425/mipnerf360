@@ -147,7 +147,7 @@ class nerf_net(nn.Module):
         
         # integrated postional encoding(IPE) of samples
         samples_enc = self.positional_encoding(mean=mean,var=var)
-        viewdirs_enc = self.viewdirs_encoding(view_dir=True,theta=rays.viewdirs.to(self.device))
+        viewdirs_enc = self.viewdirs_encoding(theta=rays.viewdirs[0].to(self.device),phi=rays.viewdirs[1].to(self.device))
         input_enc = torch.cat((samples_enc,viewdirs_enc),-1)
 
         # predict density and color

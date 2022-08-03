@@ -232,7 +232,39 @@ class LLFF(NeRFDataset):
                 images.append(image)
         images = np.stack(images, -1)
 
-
-
-
-        return 0
+        # load poses
+        with open(path.join(self.base_dir, 'poses_bounds.npy'), 'rb') as fp:
+            poses_arr = np.load(fp)
+        poses = poses_arr[:, :-2].reshape([-1, 3, 5]).transpose([1, 2, 0])
+        bds = poses_arr[:, -2:].transpose([1, 0])
+        # Update poses according to downsampling.
+        poses[:2, 4, :] = np.array(images.shape[:2]).reshape([2, 1])
+        poses[2, 4, :] = poses[2, 4, :] * 1. / self.factor
+        # Correct rotation matrix ordering and move variable dim to axis 0.
+        poses = np.concatenate([poses[:, 1:2, :], -poses[:, 0:1, :], poses[:, 2:, :]], 1)
+        poses = np.moveaxis(poses, -1, 0).astype(np.float32)
+        images = np.moveaxis(images, -1, 0)
+        self.images = images
+        bds = np.moveaxis(bds, -1, 0).astype(np.float32)
+        # Rescale according to a default bd factor.
+        scale = 1. / (bds.min() * .75)
+        poses[:, :3, 3] *= scale
+        bds *= scale
+        self.bds = bds
+        # Recenter poses.
+        poses = recenter_poses(poses)
+        self.poses = poses
+        self.images = images
+        self.h, self.w = images.shape[1:3]
+        self.n_poses = images.shape[0]
+    
+    def generate_render_poses(self):
+        self.generate_training_poses()
+        self.n_poses = self.n_poses_copy  # get overwritten in generate_training_poses, change back to original
+        if self.spherify:
+            self.generate_spherical_poses(self.n_poses)
+        else:
+            self.generate_spiral_poses(self.n_poses)
+        self.cam_to_world = self.poses[:, :3, :4]
+        self.focal = self.poses[0, -1, -1]
+    

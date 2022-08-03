@@ -5,7 +5,6 @@ import torch.nn as nn
 class PositionalEncoding(nn.Module):
     def __init__(self):
         super().__init__()
-
         # used for encoding contracted xyz
         self.P = torch.tensor([[0.8506508,0,0.5257311],
                   [0.809017,0.5,0.309017],

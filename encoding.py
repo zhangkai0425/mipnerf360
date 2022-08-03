@@ -61,16 +61,20 @@ class ViewdirectionEncoding(nn.Module):
         # used for encoding theta/phi
         self.scales = torch.tensor([2 ** i for i in range(viewdir_min_deg, viewdir_max_deg)],dtype=torch.float32,requires_grad=False)
 
-    def forward(self,theta,phi):
+    def forward(self,viewdirs):
         """forward function of viewdirection encoding
 
         Arguments:
-            theta,torch.float32,shape(batch_size,num_samples,1),view direction theta of each samples
-            phi,torch.float32,shape(batch_size,num_samples,1),view direction phi of each samples
+            viewdirs:torch.tensor(float32),[batchsize,num_sampls,3],view direction of each samples
             
         Returns:
-            enc,torch.float32,shape(batch_size,num_samples,(viewdir_max_deg-viewdir_min_deg)*2,1),viewdirection_encoding
+            enc:torch.float32,[batch_size,num_samples,(viewdir_max_deg-viewdir_min_deg)*2],viewdirection_encoding
         """
+        # compute theta and phi using viewdirs unit normal vector:n=(x,y,z)
+        x,y,z = viewdirs[:,:,0],viewdirs[:,:,1],viewdirs[:,:,2]
+        theta = torch.arccos(z)
+        phi = torch.arctan(y/(x+1e-6))
+
         # encoding the theta and phi
         theta = self.scales * theta
         phi = self.scales * phi

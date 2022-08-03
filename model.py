@@ -136,14 +136,14 @@ class nerf_net(nn.Module):
         _kaiming_init(self)
         self.to(device)
     
-    def forward(self,rays,t_vals,weights):
+    def forward(self,rays,t_vals,coarse_weights):
         final_rgbs = []
         final_dist = []
         final_accs = []
         # sample
         # 根据proposal net预测结果进行重采样 TODO:此处最难！最难！
         t_vals,(mean,var) = resample_along_rays(origins=rays.origins,directions=rays.directions,radii=rays.radii,
-                            t_vals=t_vals.to(rays.origins.device),weights=weights,randomized=self.randomized,resample_padding=self.resample_padding)
+                            t_vals=t_vals.to(rays.origins.device),weights=coarse_weights,randomized=self.randomized,resample_padding=self.resample_padding)
         
         # integrated postional encoding(IPE) of samples
         samples_enc = self.positional_encoding(mean=mean,var=var)
@@ -165,7 +165,7 @@ class nerf_net(nn.Module):
         final_accs.append(acc)
 
         # save the weights of nerf_net,used in the distillation section
-        self.weights = weights
+        self.fine_weights = weights
 
         # return everything 
         if self.return_raw:
@@ -185,8 +185,6 @@ class mipNeRF360(nn.Module):
                  density_bias=-1,
                  rgb_padding=0.001,
                  resample_padding=0.01,
-                 min_deg=0,
-                 max_deg=16,
                  viewdirs_min_deg=0,
                  viewdirs_max_deg=4,
                  device=torch.device("cuda"),
@@ -201,8 +199,6 @@ class mipNeRF360(nn.Module):
         self.density_bias = density_bias
         self.rgb_padding = rgb_padding
         self.resample_padding = resample_padding #TODO:不知何用，予以保留
-        self.min_deg = min_deg
-        self.max_deg = max_deg
         self.viewdirs_min_deg = viewdirs_min_deg
         self.viewdirs_max_deg = viewdirs_max_deg
         self.device = device

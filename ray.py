@@ -109,9 +109,6 @@ def sample_along_rays(origins,directions,radii,num_samples,near,far,randomized,l
     # mipnerf360部分
 
     # padding to avoid 1/zero
-    eps = 1e-6
-    near += eps
-    far += eps
     s_vals = torch.linspace(0.,1,num_samples + 1,device=origins.device)
     t_vals = g(s_vals * g(far) + (1-s_vals) * g(near))
     t_vals = torch.broadcast_to(t_vals,[batch_size,num_samples + 1])

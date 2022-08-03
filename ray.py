@@ -107,7 +107,43 @@ def sample_along_rays(origins,directions,radii,num_samples,near,far,ray_shape):
     return t_vals,(means,covs)
 
 def resample_along_rays(origins,directions,radii,t_vals,weights,randomized,resample_padding,ray_shape):
-    return 0
+    """Resampling along rays.
+
+    Arguments:
+        origins:torch.tensor(float32), [batch_size, 3], ray origins.
+        directions:torch.tensor(float32), [batch_size, 3], ray directions.
+        radii:torch.tensor(float32), [batch_size, 1], ray radii.
+        t_vals:torch.tensor(float32), [batch_size, num_samples+1].
+        weights:torch.tensor(float32), weights for t_vals
+        randomized:bool, use randomized samples.
+        resample_padding:float, added to the weights before normalizing.
+        ray_shape:torch.Size,shape of rays
+
+    Returns:
+        t_vals: torch.tensor, [batch_size, num_samples], sampled z values.
+        means: torch.tensor, [batch_size, num_samples, 3], sampled means.
+        covs:torch.tensor,[batch_size,num_samples,3,3],sampled covariances.
+    """
+    # stop grad,do not backprop during sampling
+    with torch.no_grad():
+        weights_pad = torch.cat([weights[..., :1], weights, weights[..., -1:]], dim=-1)
+        weights_max = torch.maximum(weights_pad[..., :-1], weights_pad[..., 1:])
+        weights_blur = 0.5 * (weights_max[..., :-1] + weights_max[..., 1:])
+
+         # Add in a constant (the sampling function will renormalize the PDF).
+        weights = weights_blur + resample_padding
+
+        new_t_vals = sorted_piecewise_constant_pdf(
+                t_vals,
+                weights,
+                t_vals.shape[-1],
+                randomized,
+            )
+
+    #TODO: do not use diag matrix?
+    means,covs = para_rays(t_vals=t_vals,origins=origins,directions=directions,radii=radii,ray_shape=ray_shape,diag=False)
+    return new_t_vals, (means, covs)
+
 
 def volumetric_rendering(rgb,density,t_vals,dirs,white_bkgd):
     return 0

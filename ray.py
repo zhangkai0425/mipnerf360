@@ -4,7 +4,7 @@ from collections import namedtuple
 from parameterization import g,conical_frustum_to_gaussian,para_rays
 
 Rays = namedtuple('Rays',('origins','directions','viewdirs','radii','near','far'))
-
+# 只剩下最后一个问题了！那就是怎么解决resample的问题
 def namedtuple_map(fn,tup):
     """Apply fn to each element of tup and cast to tup's namedtuple"""
     return type(tup)(*map(fn,tup))
@@ -144,7 +144,6 @@ def resample_along_rays(origins,directions,radii,t_vals,weights,randomized,resam
     means,covs = para_rays(t_vals=t_vals,origins=origins,directions=directions,radii=radii,ray_shape=ray_shape,diag=False)
     return new_t_vals, (means, covs)
 
-
 def volumetric_rendering(rgb,density,t_vals,dirs,white_bkgd):
     """Volumetric rendering function
 
@@ -182,5 +181,3 @@ def volumetric_rendering(rgb,density,t_vals,dirs,white_bkgd):
     if white_bkgd:
         comp_rgb = comp_rgb + (1. - acc[..., None])
     return comp_rgb, distance, acc, weights, alpha
-
-

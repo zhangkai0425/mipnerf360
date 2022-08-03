@@ -3,14 +3,7 @@ import torch.nn as nn
 from torch.autograd.functional import jacobian
 
 def g(x):
-    """compute the disparity of x:g(x)=1/x
-
-    Arguments:
-        x:torch.tensor(float32),distance along the ray
-
-    Returns:
-        s:torch.tensor(float32),disparity along the ray
-    """
+    """compute the disparity of x:g(x)=1/x"""
     # pad the tensor to avoid dividing zero
     eps = 1e-6
     x += eps
@@ -18,14 +11,7 @@ def g(x):
     return s
 
 def contract(x):
-    """contract function of x,used in parameterization
-
-    Arguments:
-        x:torch.tensor,the parameter of t along the ray
-
-    Returns:
-        contracted x:torch.tensor,x contracted to a sphere with the radius of 2
-    """
+    """contract function of x,used in parameterization"""
     x_norm = torch.norm(x)
     if x_norm <= 1:
         return x
@@ -136,5 +122,3 @@ def para_rays(t_vals,origins,directions,radii,ray_shape,diag=False):
     means, covs = conical_frustum_to_gaussian(d=directions,t0=t0,t1=t1,base_radius=radii,diag=diag,stable=True)
     means = means + origins[...,None,:]
     return means,covs
-
-

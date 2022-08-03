@@ -37,6 +37,7 @@ def cycle(iterable):
             yield x
 
 class NeRFDataset(Dataset):
+    """NeRF dataset:a base class"""
     def __init__(self, base_dir, split, spherify=False, near=2, far=6, white_bkgd=False, factor=1, n_poses=120, radius=None, radii=None, h=None, w=None, device=torch.device("cuda")):
         super().__init__()
         self.base_dir = base_dir
@@ -169,3 +170,69 @@ class NeRFDataset(Dataset):
             return self.rays[0].shape[0]
         else:
             return len(self.images)
+
+
+class Blender(NeRFDataset):
+    """Blender Dataset."""
+    def __init__(self, base_dir, split, factor=1, spherify=False, white_bkgd=True, near=2, far=6, radius=4, radii=1, h=800, w=800, device=torch.device("cuda")):
+        super(Blender, self).__init__(base_dir, split, factor=factor, spherify=spherify, near=near, far=far, white_bkgd=white_bkgd, radius=radius, radii=radii, h=h, w=w, device=device)
+
+    def generate_training_poses(self):
+        """Load data from disk."""
+        print("Loading Blender Dataset")
+        split_dir = self.split
+        with open(path.join(self.base_dir, 'transforms_{}.json'.format(split_dir)), 'r') as fp:
+            meta = json.load(fp)
+        images = []
+        cams = []
+        for i in range(len(meta['frames'])):
+            frame = meta['frames'][i]
+            fname = os.path.join(self.base_dir, frame['file_path'] + '.png')
+            with open(fname, 'rb') as imgin:
+                image = np.array(Image.open(imgin), dtype=np.float32) / 255.
+                if self.factor >= 2:
+                    [halfres_h, halfres_w] = [hw // 2 for hw in image.shape[:2]]
+                    image = cv2.resize(
+                        image, (halfres_w, halfres_h), interpolation=cv2.INTER_AREA)
+            cams.append(np.array(frame['transform_matrix'], dtype=np.float32))
+            images.append(image)
+        self.images = np.stack(np.array(images), axis=0)
+        if self.white_bkgd:
+            self.images = (
+                    self.images[..., :3] * self.images[..., -1:] +
+                    (1. - self.images[..., -1:]))
+        else:
+            self.images = self.images[..., :3]
+        self.h, self.w = self.images.shape[1:3]
+        self.cam_to_world = np.stack(cams, axis=0)
+        camera_angle_x = float(meta['camera_angle_x'])
+        self.focal = .5 * self.w / np.tan(.5 * camera_angle_x)
+        self.n_poses = self.images.shape[0]
+
+
+class LLFF(NeRFDataset):
+    def __init__(self, base_dir, split, factor=4, spherify=False, near=0, far=1, white_bkgd=False, device=torch.device("cpu")):
+        super(LLFF, self).__init__(base_dir, split, spherify=spherify, near=near, far=far, white_bkgd=white_bkgd, factor=factor, device=device)
+    def generate_training_poses(self):
+        """Load data from disk."""
+        img_dir = 'images'
+        if self.factor != 1:
+            img_dir = 'images_' + str(self.factor)
+        img_dir = path.join(self.base_dir,img_dir)
+        img_files = [
+            path.join(img_dir, f)
+            for f in sorted(os.listdir(img_dir))
+            if f.endswith('JPG') or f.endswith('jpg') or f.endswith('png')
+        ]
+        print("debug here看这里!!!::images_file = ",img_files)
+        images = []
+        for img_file in img_files:
+            with open(img_file, 'rb') as img_in:
+                image = to_float(np.array(Image.open(img_in)))
+                images.append(image)
+        images = np.stack(images, -1)
+
+
+
+
+        return 0

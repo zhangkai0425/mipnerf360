@@ -2,6 +2,20 @@ import torch
 import torch.nn as nn
 from torch.autograd.functional import jacobian
 
+def g(x):
+    """compute the disparity of x:g(x)=1/x
+    Arguments:
+        x:torch.tensor(float32),distance along the ray
+
+    Returns:
+        s:torch.tensor(float32),disparity along the ray
+    """
+    # pad the tensor to avoid dividing zero
+    eps = 1e-6
+    x += eps
+    s = 1/x
+    return s
+
 def contract(x):
     """contract function of x,used in parameterization
     Arguments:

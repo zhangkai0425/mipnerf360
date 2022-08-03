@@ -161,7 +161,26 @@ def volumetric_rendering(rgb,density,t_vals,dirs,white_bkgd):
         acc:torch.tensor(float32),[batch_size],finla accumulation of batch rays.
         weights:torch.tensor(float32),[batch_size,num_samples],weights along the rays.
     """
-    return 0
+    t_mids = 0.5 * (t_vals[..., :-1] + t_vals[..., 1:])
+    t_dists = t_vals[..., 1:] - t_vals[..., :-1]
+    delta = t_dists * torch.linalg.norm(dirs[..., None, :], dim=-1)
+    # Note that we're quietly turning density from [..., 0] to [...].
+    density_delta = density[..., 0] * delta
 
+    alpha = 1 - torch.exp(-density_delta)
+    trans = torch.exp(-torch.cat([
+        torch.zeros_like(density_delta[..., :1]),
+        torch.cumsum(density_delta[..., :-1], dim=-1)
+    ], dim=-1))
+    weights = alpha * trans
+
+    comp_rgb = (weights[..., None] * rgb).sum(dim=-2)
+    acc = weights.sum(dim=-1)
+    distance = (weights * t_mids).sum(dim=-1) / acc
+    distance = torch.clamp(torch.nan_to_num(distance), t_vals[:, 0], t_vals[:, -1])
+
+    if white_bkgd:
+        comp_rgb = comp_rgb + (1. - acc[..., None])
+    return comp_rgb, distance, acc, weights, alpha
 
 

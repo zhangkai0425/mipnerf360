@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 from collections import namedtuple
-from parameterization import *
+from parameterization import g,conical_frustum_to_gaussian
 
 Rays = namedtuple('Rays',('origins','directions','viewdirs','radii','near','far'))
 
@@ -106,23 +106,19 @@ def sample_along_rays(origins,directions,radii,num_samples,near,far,randomized,l
     # 2.s上均匀采样后，返回x空间
     # 3.看看有没有其他细节需要补充，就可以封装了
     # 4.写好resample部分，即
-    if lindisp:
-        t_vals = 1. / (1. / near * (1. - t_vals) + 1. / far * t_vals)
-    else:
-        t_vals = near * (1. - t_vals) + far * t_vals
-    
-    if randomized:
-        mids = 0.5 * (t_vals[...,1:] + t_vals[...:-1])
-        upper = torch.cat([mids,t_vals[...,-1:]],-1)
-        lower = torch.cat([t_vals[...,:1],mids],-1)
-        t_rand = torch.rand(batch_size,num_samples+1,device=origins.device)
-        t_vals = lower + (upper-lower) * t_rand
-    else:
-        # Broadcast t_vals to make the returned shape consistant
-        t_vals = torch.broadcast_to(t_vals,[batch_size,num_samples + 1])
+    # mipnerf360部分
+
+    # padding to avoid 1/zero
+    eps = 1e-6
+    near += eps
+    far += eps
+    s_vals = torch.linspace(0.,1,num_samples + 1,device=origins.device)
+    t_vals = g(s_vals * g(far) + (1-s_vals) * g(near))
+    t_vals = torch.broadcast_to(t_vals,[batch_size,num_samples + 1])
+
     means,covs = cast_rays(t_vals,origins,directions,radii,ray_shape)
     return t_vals,(means,covs)
-    
+
     
 
 

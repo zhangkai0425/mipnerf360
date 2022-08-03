@@ -8,10 +8,6 @@ from PIL import Image
 from ray import Rays,convert_to_ndc,namedtuple_map
 from torch.utils.data import Dataset, DataLoader
 
-dataset_dict = {
-    'blender': Blender,
-    'llff': LLFF,
-}
 
 def get_dataset(dataset_name, base_dir, split, factor=4, device=torch.device("cuda")):
     d = dataset_dict[dataset_name](base_dir, split, factor=factor, device=device)
@@ -388,3 +384,8 @@ class LLFF(NeRFDataset):
             radii=radii,
             near=ones * self.near,
             far=ones * self.far)
+
+dataset_dict = {
+    'blender': Blender,
+    'llff': LLFF,
+}

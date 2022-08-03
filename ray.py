@@ -146,8 +146,22 @@ def resample_along_rays(origins,directions,radii,t_vals,weights,randomized,resam
 
 
 def volumetric_rendering(rgb,density,t_vals,dirs,white_bkgd):
-    return 0
+    """Volumetric rendering function
 
+    Arguments:
+        rgb:torch.tensor(float32),color,[batch_size,num_samples,3]
+        density: torch.tensor(float32), density, [batch_size, num_samples, 1].
+        t_vals:torch.tensor(float32), [batch_size, num_samples].
+        dirs:torch.tensor(float32), [batch_size, 3].
+        white_bkgd:bool,whether use white background(nerf synthetic data) or not(nerf llff data)
+
+    Returns:
+        comp_rgb:torch.tensor(float32), [batch_size, 3],final color of batch pixels.
+        disp:torch.tensor(float32),[batch_size],final disparity of batch pixels.
+        acc:torch.tensor(float32),[batch_size],finla accumulation of batch rays.
+        weights:torch.tensor(float32),[batch_size,num_samples],weights along the rays.
+    """
+    return 0
 
 
 

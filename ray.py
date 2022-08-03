@@ -1,10 +1,10 @@
 import numpy as np
 import torch
 from collections import namedtuple
-from parameterization import g,conical_frustum_to_gaussian,para_rays
+from parameterization import g,para_rays
 
 Rays = namedtuple('Rays',('origins','directions','viewdirs','radii','near','far'))
-# 只剩下最后一个问题了！那就是怎么解决resample的问题
+
 def namedtuple_map(fn,tup):
     """Apply fn to each element of tup and cast to tup's namedtuple"""
     return type(tup)(*map(fn,tup))
@@ -78,7 +78,7 @@ def convert_to_ndc(origins,directions,focal,w,h,near=1.0):
     directions = np.stack([d0, d1, d2], -1)
     return origins, directions
 
-def sample_along_rays(origins,directions,radii,num_samples,near,far,ray_shape):
+def sample_along_rays(origins,directions,radii,num_samples,near,far):
     """[summary]
 
     Arguments:
@@ -88,7 +88,6 @@ def sample_along_rays(origins,directions,radii,num_samples,near,far,ray_shape):
         num_samples:int,number of samples.
         near:torch.tensor,[batch_size,1],near clip.
         far:torch.tensor,[batch_size,1],far clip.
-        ray_shape:torch.Size,shape of rays
     
     Returns:
         t_vals:torch.tensor,[batch_size,num_samples],sampled z values.
@@ -102,11 +101,11 @@ def sample_along_rays(origins,directions,radii,num_samples,near,far,ray_shape):
     t_vals = g(s_vals * g(far) + (1-s_vals) * g(near))
     t_vals = torch.broadcast_to(t_vals,[batch_size,num_samples + 1])
     #TODO: do not use diag matrix?
-    means,covs = para_rays(t_vals=t_vals,origins=origins,directions=directions,radii=radii,ray_shape=ray_shape,diag=False)
+    means,covs = para_rays(t_vals=t_vals,origins=origins,directions=directions,radii=radii,diag=False)
     
     return t_vals,(means,covs)
 
-def resample_along_rays(origins,directions,radii,t_vals,weights,randomized,resample_padding,ray_shape):
+def resample_along_rays(origins,directions,radii,t_vals,weights,randomized,resample_padding):
     """Resampling along rays.
 
     Arguments:
@@ -117,7 +116,6 @@ def resample_along_rays(origins,directions,radii,t_vals,weights,randomized,resam
         weights:torch.tensor(float32), weights for t_vals
         randomized:bool, use randomized samples.
         resample_padding:float, added to the weights before normalizing.
-        ray_shape:torch.Size,shape of rays
 
     Returns:
         t_vals: torch.tensor, [batch_size, num_samples], sampled z values.
@@ -141,7 +139,7 @@ def resample_along_rays(origins,directions,radii,t_vals,weights,randomized,resam
             )
 
     #TODO: do not use diag matrix?
-    means,covs = para_rays(t_vals=t_vals,origins=origins,directions=directions,radii=radii,ray_shape=ray_shape,diag=False)
+    means,covs = para_rays(t_vals=t_vals,origins=origins,directions=directions,radii=radii,diag=False)
     return new_t_vals, (means, covs)
 
 def volumetric_rendering(rgb,density,t_vals,dirs,white_bkgd):
@@ -180,4 +178,4 @@ def volumetric_rendering(rgb,density,t_vals,dirs,white_bkgd):
 
     if white_bkgd:
         comp_rgb = comp_rgb + (1. - acc[..., None])
-    return comp_rgb, distance, acc, weights, alpha
+    return comp_rgb, distance, acc, weights

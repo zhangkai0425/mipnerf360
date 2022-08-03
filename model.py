@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from ray import sample_along_rays,resample_along_rays,volumetric_rendering
 from encoding import PositionalEncoding,ViewdirectionEncoding
 from torch.nn.modules.activation import Sigmoid
 
@@ -15,8 +16,8 @@ class prop_net(nn.Module):
                  num_samples=128,
                  hidden_proposal=256,
                  density_bias=-1,
-                 viewdirs_min_deg=0,
-                 viewdirs_max_deg=4,
+                 viewdir_min_deg=0,
+                 viewdir_max_deg=4,
                  device=torch.device("cuda"),
                  ):
         super().__init__()
@@ -26,15 +27,15 @@ class prop_net(nn.Module):
         self.num_samples = num_samples
         self.hidden_proposal = hidden_proposal
         self.density_bias = density_bias
-        self.viewdirs_min_deg = viewdirs_min_deg
-        self.viewdirs_max_deg = viewdirs_max_deg
+        self.viewdir_min_deg = viewdir_min_deg
+        self.viewdir_max_deg = viewdir_max_deg
         self.device = device
 
         # IPE module
         self.positional_encoding = PositionalEncoding()
         self.viewdirs_encoding = ViewdirectionEncoding(self.viewdirs_min_deg,self.viewdirs_max_deg)
 
-        self.input_size = 21*3*2 + (self.viewdirs_max_deg-self.viewdirs_min_deg) * 2 * 2 #TODO: self.input
+        self.input_size = 21*3*2 + (self.viewdir_max_deg-self.viewdir_min_deg) * 2 * 2 #TODO: self.input
         self.density_activation = nn.Softplus()
 
         # proposal network: depth = 4 width = 256
@@ -57,8 +58,8 @@ class prop_net(nn.Module):
     def forward(self,rays):
         #TODO: sample_along_rays很难实现，真的
         # sample
-        s_vals, (mean, var) = sample_along_rays(rays.origins,rays.directions,rays.radii,self.num_samples,
-                                                        rays.near,rays.far,randomized=self.randomized,lindisp=False)
+        s_vals, (mean, var) = sample_along_rays(origins=rays.origins,directions=rays.directions,radii=rays.radii,num_samples=self.num_samples,
+                                                        near=rays.near,far=rays.far)
         # integrated postional encoding(IPE) of samples
         samples_enc = self.positional_encoding(mean,var)
         viewdirs_enc = self.viewdirs_encoding(rays.viewdirs.to(self.device))
@@ -135,14 +136,14 @@ class nerf_net(nn.Module):
         _kaiming_init(self)
         self.to(device)
     
-    def forward(self,rays,s_vals,weights):
+    def forward(self,rays,t_vals,weights):
         final_rgbs = []
         final_dist = []
         final_accs = []
         # sample
         # 根据proposal net预测结果进行重采样 TODO:此处最难！最难！
-        s_vals,(mean,var) = resample_along_rays(rays.origins,rays.directions,rays.radii,
-                            s_vals.to(rays.origins.device))
+        t_vals,(mean,var) = resample_along_rays(origins=rays.origins,directions=rays.directions,radii=rays.radii,
+                            t_vals=t_vals.to(rays.origins.device),weights=weights,randomized=self.randomized,resample_padding=self.resample_padding)
         
         # integrated postional encoding(IPE) of samples
         samples_enc = self.positional_encoding(mean=mean,var=var)
@@ -157,7 +158,7 @@ class nerf_net(nn.Module):
         # volumetric rendering
         rgb = raw_rgb * (1 + 2 * self.rgb_padding) - self.rgb_padding
         density = self.density_activation(raw_density + self.density_bias)
-        comp_rgb,distance,acc,weights,alpha = volumetric_rendering(rgb, density, s_vals, rays.directions.to(rgb.device))
+        comp_rgb,distance,acc,weights = volumetric_rendering(rgb=rgb, density=density, t_vals=t_vals, dirs=rays.directions.to(rgb.device),white_bkgd=self.white_bkgd)
         
         final_rgbs.append(comp_rgb)
         final_dist.append(distance)
@@ -211,14 +212,14 @@ class mipNeRF360(nn.Module):
         # proposal network: depth = 4 width = 256
         self.prop_net = prop_net(randomized=self.randomized,num_samples=self.num_samples,
                         hidden_proposal=self.hidden_proposal,density_bias=self.density_bias,
-                        min_deg=self.min_deg,max_deg=self.max_deg,viewdirs_min_deg=self.viewdirs_min_deg,
-                        viewdirs_max_deg=self.viewdirs_max_deg,device=self.device)
+                        viewdir_min_deg=self.viewdirs_min_deg,viewdir_max_deg=self.viewdirs_max_deg,
+                        device=self.device)
 
         # nerf network: depth = 8 width = 1024
         self.nerf_net = nerf_net(randomized=self.randomized,num_samples=self.num_samples,
                         hidden_nerf=self.hidden_nerf,density_bias=self.density_bias,rgb_padding=self.rgb_padding,
-                        resample_padding=self.resample_padding,min_deg=self.min_deg,max_deg=self.max_deg,
-                        viewdirs_min_deg=self.viewdirs_min_deg,viewdirs_max_deg=self.viewdirs_max_deg,device=self.device)
+                        resample_padding=self.resample_padding,viewdir_min_deg=self.viewdirs_min_deg,viewdir_max_deg=self.viewdirs_max_deg,
+                        device=self.device)
 
         self.to(device)
 

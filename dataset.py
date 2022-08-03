@@ -124,6 +124,7 @@ class NeRFDataset(Dataset):
         # Rotate ray directions from camera frame to the world frame
         directions = ((camera_directions[None, ..., None, :] * self.cam_to_world[:, None, None, :3, :3]).sum(axis=-1))  # Translate camera frame's origin to the world frame
         origins = np.broadcast_to(self.cam_to_world[:, None, None, :3, -1], directions.shape)
+        # unit vector
         viewdirs = directions / np.linalg.norm(directions, axis=-1, keepdims=True)
 
         # Distance from each unit-norm direction vector to its x-axis neighbor
@@ -282,19 +283,108 @@ class LLFF(NeRFDataset):
         self.focal = self.poses[0, -1, -1]
         print("Generating rays")
         self.generate_rays()
-    #TODO:今天的任务就是写完dataset,然后去看resample函数
-    #之后干什么呢？dataset和resample写完之后，就准备写蒸馏策略
-    #明天周四完全写完蒸馏训练策略
-    #后天周五完全写完正则化过程
-    #周六完善
-    #周日跑通pipline
-    #周一完善，跑通
-    #周二完善，跑通
-    #周三完善，跑通
-    #周四完善，跑通
-    #周五完善，跑通
-    #周六完善，跑通，写文档
-    #周日完善，跑通，写文档
-    #周一完善，写文档，准备材料
-    #周二完善，写文档，准备离职
-    #周三离职，
+    
+    def generate_spherical_poses(self, n_poses=120):
+        """Generate a 360 degree spherical path for rendering."""
+        p34_to_44 = lambda p: np.concatenate([
+            p,
+            np.tile(np.reshape(np.eye(4)[-1, :], [1, 1, 4]), [p.shape[0], 1, 1])
+        ], 1)
+        rays_d = self.poses[:, :3, 2:3]
+        rays_o = self.poses[:, :3, 3:4]
+
+        def min_line_dist(rays_o, rays_d):
+            a_i = np.eye(3) - rays_d * np.transpose(rays_d, [0, 2, 1])
+            b_i = -a_i @ rays_o
+            pt_mindist = np.squeeze(-np.linalg.inv(
+                (np.transpose(a_i, [0, 2, 1]) @ a_i).mean(0)) @ (b_i).mean(0))
+            return pt_mindist
+
+        pt_mindist = min_line_dist(rays_o, rays_d)
+        center = pt_mindist
+        up = (self.poses[:, :3, 3] - center).mean(0)
+        vec0 = normalize(up)
+        vec1 = normalize(np.cross([.1, .2, .3], vec0))
+        vec2 = normalize(np.cross(vec0, vec1))
+        pos = center
+        c2w = np.stack([vec1, vec2, vec0, pos], 1)
+        poses_reset = (
+                np.linalg.inv(p34_to_44(c2w[None])) @ p34_to_44(self.poses[:, :3, :4]))
+        rad = np.sqrt(np.mean(np.sum(np.square(poses_reset[:, :3, 3]), -1)))
+        sc = 1. / rad
+        poses_reset[:, :3, 3] *= sc
+        self.bds *= sc
+        rad *= sc
+        centroid = np.mean(poses_reset[:, :3, 3], 0)
+        zh = centroid[2]
+        radcircle = np.sqrt(rad ** 2 - zh ** 2)
+        new_poses = []
+
+        for th in np.linspace(0., 2. * np.pi, n_poses):
+            cam_origin = np.array([radcircle * np.cos(th), radcircle * np.sin(th), zh])
+            up = np.array([0, 0, -1.])
+            vec2 = normalize(cam_origin)
+            vec0 = normalize(np.cross(vec2, up))
+            vec1 = normalize(np.cross(vec2, vec0))
+            pos = cam_origin
+            p = np.stack([vec0, vec1, vec2, pos], 1)
+            new_poses.append(p)
+
+        new_poses = np.stack(new_poses, 0)
+        self.poses = np.concatenate([
+            new_poses,
+            np.broadcast_to(self.poses[0, :3, -1:], new_poses[:, :3, -1:].shape)
+        ], -1)
+    
+    def generate_spiral_poses(self, n_poses=120):
+        """Generate a spiral path for rendering."""
+        print("我被调用了!")
+        c2w = poses_avg(self.poses)
+        # Get average pose.
+        up = normalize(self.poses[:, :3, 1].sum(0))
+        # Find a reasonable 'focus depth' for this dataset.
+        close_depth, inf_depth = self.bds.min() * .9, self.bds.max() * 5.
+        dt = .75
+        mean_dz = 1. / (((1. - dt) / close_depth + dt / inf_depth))
+        focal = mean_dz
+        # Get radii for spiral path.
+        tt = self.poses[:, :3, 3]
+        rads = np.percentile(np.abs(tt), 90, 0)
+        c2w_path = c2w
+        n_rots = 2
+        # Generate poses for spiral path.
+        render_poses = []
+        rads = np.array(list(rads) + [1.])
+        hwf = c2w_path[:, 4:5]
+        zrate = .5
+        for theta in np.linspace(0., 2. * np.pi * n_rots, n_poses + 1)[:-1]:
+            c = np.dot(c2w[:3, :4], (np.array(
+                [np.cos(theta), -np.sin(theta), -np.sin(theta * zrate), 1.]) * rads))
+            z = normalize(c - np.dot(c2w[:3, :4], np.array([0, 0, -focal, 1.])))
+            render_poses.append(np.concatenate([look_at(z, up, c), hwf], 1))
+        self.poses = np.array(render_poses).astype(np.float32)
+
+    def generate_rays(self):
+        """Generate normalized device coordinate rays for llff."""
+        super().generate_rays()
+        ndc_origins, ndc_directions = convert_to_ndc(self.rays.origins, self.rays.directions, self.focal, self.w, self.h)
+        mat = ndc_origins
+        # Distance from each unit-norm direction vector to its x-axis neighbor.
+        dx = np.sqrt(np.sum((mat[:, :-1, :, :] - mat[:, 1:, :, :]) ** 2, -1))
+        dx = np.concatenate([dx, dx[:, -2:-1, :]], 1)
+
+        dy = np.sqrt(np.sum((mat[:, :, :-1, :] - mat[:, :, 1:, :]) ** 2, -1))
+        dy = np.concatenate([dy, dy[:, :, -2:-1]], 2)
+        # Cut the distance in half, and then round it out so that it's
+        # halfway between inscribed by / circumscribed about the pixel.
+        radii = (0.5 * (dx + dy))[..., None] * 2 / np.sqrt(12)
+
+        ones = np.ones_like(ndc_origins[..., :1])
+        print("debug here::rays::",ndc_origins.shape,radii.shape)
+        self.rays = Rays(
+            origins=ndc_origins,
+            directions=ndc_directions,
+            viewdirs=self.rays.viewdirs,
+            radii=radii,
+            near=ones * self.near,
+            far=ones * self.far)

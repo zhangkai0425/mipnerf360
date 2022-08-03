@@ -106,6 +106,12 @@ def sample_along_rays(origins,directions,radii,num_samples,near,far,ray_shape):
     
     return t_vals,(means,covs)
 
+def resample_along_rays(origins,directions,radii,t_vals,weights,randomized,resample_padding,ray_shape):
+    return 0
+
+def volumetric_rendering(rgb,density,t_vals,dirs,white_bkgd):
+    return 0
+
 
 
 

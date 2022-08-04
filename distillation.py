@@ -13,8 +13,8 @@ def bounds(t_vals_fine,fine_weights,t_vals_coarse):
         T:torch.tensor(float32), [batch_size, num_samples+1],t_vals from the prop_net.
 
     Returns:
-        bounds:torch.tensor(float32), [batch_size, num_samples],bounds of the fine_weight,should be consist with the coarse weight,
-        therefore the coarse_weight becomes the envelope of the fine_weight
+        bounds:torch.tensor(float32), [batch_size, num_samples],bounds of the fine_weight,should be consist with the coarse weight.
+        therefore the coarse_weight becomes the envelope of the fine_weight.
     """
     t0 = t_vals_fine[...,:-1]
     t1 = t_vals_fine[...,1:]
@@ -31,17 +31,22 @@ def bounds(t_vals_fine,fine_weights,t_vals_coarse):
     B = B.detach()
     return B
 
-def loss_prop(coarse_weights,bounds):
+def Loss_prop(coarse_weights,bounds):
     """[summary]
 
     Arguments:
-        coarse_weights {[type]} -- [description]
-        bounds {[type]} -- [description]
+        coarse_weights:torch.tensor(float32), [batch_size, num_samples],coarse weights from the prop_net
+        bounds:torch.tensor(float32), [batch_size, num_samples],bounds of the fine_weight,should be consist with the coarse weight
 
     Returns:
-        [type] -- [description]
+        loss:torch.tensor(float32),loss of the proposal
     """
-    return 0
+    eps = 1e-6
+    max_func = nn.ReLU()
+    loss = torch.square(max_func(bounds - coarse_weights)) / (coarse_weights + eps)
+
+    return loss
+
 def distillation(student,teacher):
     """implementation of distillation network"""
 

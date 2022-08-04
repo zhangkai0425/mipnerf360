@@ -143,8 +143,8 @@ class nerf_net(nn.Module):
         final_rgbs = []
         final_dist = []
         final_accs = []
-        # sample
-        # 根据proposal net预测结果进行重采样 TODO:此处最难！最难！
+
+        # resample
         t_vals,(mean,var) = resample_along_rays(origins=rays.origins,directions=rays.directions,radii=rays.radii,
                             t_vals=t_vals.to(rays.origins.device),weights=coarse_weights,randomized=self.randomized,resample_padding=self.resample_padding)
         
@@ -222,5 +222,10 @@ class mipNeRF360(nn.Module):
 
         self.to(device)
 
+    def forward(self,rays):
+        #TODO:forward to output final density and color
+        return 0
+    
     def render_image(self,rays,height,width,chunks=4096):
+        #TODO:use the final density and color to render a complete image
         return 0

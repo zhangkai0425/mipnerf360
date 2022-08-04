@@ -139,7 +139,7 @@ def resample_along_rays(origins,directions,radii,t_vals,weights,randomized,resam
             )
 
     #TODO: do not use diag matrix?
-    means,covs = para_rays(t_vals=t_vals,origins=origins,directions=directions,radii=radii,diag=False)
+    means,covs = para_rays(t_vals=new_t_vals,origins=origins,directions=directions,radii=radii,diag=False)
     return new_t_vals, (means, covs)
 
 def volumetric_rendering(rgb,density,t_vals,dirs,white_bkgd):

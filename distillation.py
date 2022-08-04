@@ -4,8 +4,8 @@ import torch.nn as nn
 def bounds(t_vals_fine,fine_weights,t_vals_coarse):
     """compute the bounds of prop net:opposite of the origin paper
     because I don't think the paper is right:the output of the proposal network should be the
-    envelope of the nerf network,so we should compute the bound using nerf_net's output
-    what do you think?Please raise an issue if you have a different idea!
+    envelope of the nerf network,so we should compute the bound using nerf_net's output.
+    What do you think?Please raise an issue if you have a different idea!
 
     Arguments:
         t_vals_fine:torch.tensor(float32), [batch_size, num_samples+1],t_vals from the nerf_net.
@@ -29,7 +29,7 @@ def bounds(t_vals_fine,fine_weights,t_vals_coarse):
         B[...,i] = torch.sum(fine_weights[~((t0>R)|(t1<L))],dim=-1)
 
     B = B.detach()
-    
+
     return B
 
 def Loss_prop(coarse_weights,bounds):

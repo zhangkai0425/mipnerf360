@@ -78,7 +78,7 @@ def convert_to_ndc(origins,directions,focal,w,h,near=1.0):
     directions = np.stack([d0, d1, d2], -1)
     return origins, directions
 
-def sample_along_rays(origins,directions,radii,num_samples,near,far):
+def sample_along_rays(origins,directions,radii,num_samples,near,far,randomized):
     """[summary]
 
     Arguments:
@@ -99,7 +99,17 @@ def sample_along_rays(origins,directions,radii,num_samples,near,far):
     # mipnerf360 sample strategy
     s_vals = torch.linspace(0.,1,num_samples + 1,device=origins.device)
     t_vals = g(s_vals * g(far) + (1-s_vals) * g(near))
-    t_vals = torch.broadcast_to(t_vals,[batch_size,num_samples + 1])
+
+    if randomized:
+        mids = 0.5 * (t_vals[..., 1:] + t_vals[..., :-1])
+        upper = torch.cat([mids, t_vals[..., -1:]], -1)
+        lower = torch.cat([t_vals[..., :1], mids], -1)
+        t_rand = torch.rand(batch_size, num_samples + 1, device=origins.device)
+        t_vals = lower + (upper - lower) * t_rand
+    else:
+        # Broadcast t_vals to make the returned shape consistent.
+        t_vals = torch.broadcast_to(t_vals, [batch_size, num_samples + 1])
+
     #TODO: do not use diag matrix?
     means,covs = para_rays(t_vals=t_vals,origins=origins,directions=directions,radii=radii,diag=False)
     

@@ -54,6 +54,9 @@ class prop_net(nn.Module):
         # initialize the model ang put the model to device
         _kaiming_init(self)
         self.to(device)
+        
+    def density2weight(self,density):
+        return 0
     
     def forward(self,rays):
         #TODO: sample_along_rays很难实现，真的
@@ -68,7 +71,7 @@ class prop_net(nn.Module):
         # predict density
         raw_density = self.model(input_enc)
         density = self.density_activation(raw_density + self.density_bias)
-    
+        # 计划是直接在这里增加一个计算weight的函数，返回weight即可
         return s_vals,density
 
 class nerf_net(nn.Module):

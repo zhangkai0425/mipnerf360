@@ -1,21 +1,17 @@
-import os.path
-import shutil
-from config import get_config
-from model import mipNeRF360
 import torch
-import torch.optim as optim
-import torch.utils.tensorboard as tb
-from os import path
-from datasets import get_dataloader, cycle
+import shutil
+import os.path
 import numpy as np
+from os import path
+import torch.optim as optim
+from model import mipNeRF360
+from config import get_config
+from scheduler import lr_decay
+import torch.utils.tensorboard as tb
+from datasets import get_dataloader, cycle
+
 """
-先写loss_prop损失函数，争取用一上午完成；再写蒸馏训练策略，下午完成
-detach函数固定A的输出
 其实这里是比较难的，需要写distillation训练策略，打算在distillation中封装一下
-包络损失的损失函数，其他细节函数
-"""
-"""
-代码量完全不够！今天务必将train.py基本完成，主要集中于蒸馏的策略
 """
 
 def train_model(config):
@@ -48,10 +44,10 @@ def train_model(config):
         model.load_state_dict(torch.load(model_save_path))
         optimizer.load_state_dict(torch.load(optimizer_save_path))
     # 学习率的退火算法，这个需要单独花半天时间去实现一下
-    scheduler = MipLRDecay(optimizer, lr_init=config.lr_init, lr_final=config.lr_final, max_steps=config.max_steps, lr_delay_steps=config.lr_delay_steps, lr_delay_mult=config.lr_delay_mult)
+    scheduler = lr_decay(optimizer, lr_init=config.lr_init, lr_final=config.lr_final, max_steps=config.max_steps, lr_delay_steps=config.lr_delay_steps, lr_delay_mult=config.lr_delay_mult)
     loss_func = NeRFLoss(config.coarse_weight_decay)
     model.train()
-
+    
     os.makedirs(config.log_dir, exist_ok=True)
     shutil.rmtree(path.join(config.log_dir, 'train'), ignore_errors=True)
     logger = tb.SummaryWriter(path.join(config.log_dir, 'train'), flush_secs=1)

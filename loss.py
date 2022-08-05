@@ -32,7 +32,11 @@ def Loss_nerf(input,target):
     """
     batch_size = input.shape[0]
     mse_loss = ((input[...,:3] - target[..., :3]) ** 2).sum() / batch_size
-    psnr = -10.0 * torch.log10(mse_loss)
+    psnr = mse_to_psnr(mse_loss)
 
     return mse_loss,psnr
+
+def mse_to_psnr(mse):
+    """transform mse to psnr"""
+    return -10.0 * torch.log10(mse)
     

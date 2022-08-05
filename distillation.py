@@ -32,7 +32,7 @@ def bounds(t_vals_fine,fine_weights,t_vals_coarse):
 
     return B
 
-def Loss_prop(coarse_weights,bounds):
+def loss_prop(coarse_weights,bounds):
     """Loss_prop according to the paper,still,opposite of the origin paper,but I think it is right
 
     Arguments:

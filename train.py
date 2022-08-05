@@ -8,6 +8,7 @@ from model import mipNeRF360
 from config import get_config
 from scheduler import lr_decay
 import torch.utils.tensorboard as tb
+from loss import Loss_prop,Loss_nerf,mse_to_psnr
 from datasets import get_dataloader, cycle
 
 """
@@ -43,22 +44,27 @@ def train_model(config):
     if config.continue_training:
         model.load_state_dict(torch.load(model_save_path))
         optimizer.load_state_dict(torch.load(optimizer_save_path))
-    # 学习率的退火算法，这个需要单独花半天时间去实现一下
+
     scheduler = lr_decay(optimizer, lr_init=config.lr_init, lr_final=config.lr_final, max_steps=config.max_steps, lr_delay_steps=config.lr_delay_steps, lr_delay_mult=config.lr_delay_mult)
-    loss_func = NeRFLoss(config.coarse_weight_decay)
+    # loss_func = NeRFLoss(config.coarse_weight_decay)
+    
     model.train()
     
     os.makedirs(config.log_dir, exist_ok=True)
     shutil.rmtree(path.join(config.log_dir, 'train'), ignore_errors=True)
     logger = tb.SummaryWriter(path.join(config.log_dir, 'train'), flush_secs=1)
 
+
+    # 准备修改为enumerate的形式
+
     for step in range(0, config.max_steps):
         rays, pixels = next(data)
         comp_rgb, _, _ = model(rays)
         pixels = pixels.to(config.device)
-
+        #周末任务
         # Compute loss and update model weights.
-        loss_val, psnr = loss_func(comp_rgb, pixels, rays.lossmult.to(config.device))
+        loss_val, psnr = Loss_nerf(comp_rgb, pixels)
+
         optimizer.zero_grad()
         loss_val.backward()
         optimizer.step()

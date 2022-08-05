@@ -50,4 +50,3 @@ def loss_prop(coarse_weights,bounds):
     loss = torch.square(max_func(bounds - coarse_weights)) / (coarse_weights + eps)
 
     return loss
-    

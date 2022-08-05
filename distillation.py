@@ -16,24 +16,25 @@ def bounds(t_vals_fine,fine_weights,t_vals_coarse):
         bounds:torch.tensor(float32), [batch_size, num_samples],bounds of the fine_weight,should be consist with the coarse weight.
         therefore the coarse_weight becomes the envelope of the fine_weight.
     """
+    t_vals_fine = t_vals_fine.detach()
+    fine_weights = fine_weights.detach()
     t0 = t_vals_fine[...,:-1]
     t1 = t_vals_fine[...,1:]
     T0 = t_vals_coarse[...,:-1]
     T1 = t_vals_coarse[...,1:]
-    fine_weights = fine_weights.detach()
+
     # fine_weights and coarse weights are all 128 samples,the same shape
     B = torch.zeros_like(fine_weights)
     # use for loop,only 128 times,so don't worry the cost of time
     for i in range(fine_weights.shape[-1]):
         L,R = T0[...,i],T1[...,i]
         B[...,i] = torch.sum(fine_weights[~((t0>R)|(t1<L))],dim=-1)
-
+    # stop grad of all
     B = B.detach()
-
     return B
 
 def loss_prop(coarse_weights,bounds):
-    """Loss_prop according to the paper,still,opposite of the origin paper,but I think it is right
+    """loss_prop according to the paper,still,opposite of the origin paper,but I think it is right
 
     Arguments:
         coarse_weights:torch.tensor(float32), [batch_size, num_samples],coarse weights from the prop_net

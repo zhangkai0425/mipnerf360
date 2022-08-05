@@ -113,15 +113,6 @@ def look_at(z, up, pos):
     m = np.stack([vec0, vec1, vec2, pos], 1)
     return m
 
-
-def flatten(x):
-    # Always flatten out the height x width dimensions
-    x = [y.reshape([-1, y.shape[-1]]) for y in x]
-    # concatenate all data into one list
-    x = np.concatenate(x, axis=0)
-    return x
-
-
 def normalize(x):
     """Normalization helper function."""
     return x / np.linalg.norm(x)

@@ -2,7 +2,6 @@ import numpy as np
 from scipy import signal
 import matplotlib.cm as cm
 
-
 def generate_spiral_cam_to_world(radii, focus_depth, n_poses=120):
     """
     Generate a spiral path for rendering
@@ -30,7 +29,6 @@ def generate_spiral_cam_to_world(radii, focus_depth, n_poses=120):
         y = np.cross(z, x)
         spiral_cams += [np.stack([y, z, x, center], 1)]
     return np.stack(spiral_cams, 0)
-
 
 def generate_spherical_cam_to_world(radius, n_poses=120):
     """
@@ -77,7 +75,6 @@ def generate_spherical_cam_to_world(radius, n_poses=120):
         spheric_cams += [spheric_pose(th, -30, radius)]
     return np.stack(spheric_cams, 0)
 
-
 def recenter_poses(poses):
     """Recenter poses according to the original NeRF code."""
     poses_ = poses.copy()
@@ -91,7 +88,6 @@ def recenter_poses(poses):
     poses = poses_
     return poses
 
-
 def poses_avg(poses):
     """Average poses according to the original NeRF code."""
     hwf = poses[0, :3, -1:]
@@ -100,7 +96,6 @@ def poses_avg(poses):
     up = poses[:, :3, 1].sum(0)
     c2w = np.concatenate([look_at(vec2, up, center), hwf], 1)
     return c2w
-
 
 def look_at(z, up, pos):
     """Construct look at view matrix
@@ -113,15 +108,6 @@ def look_at(z, up, pos):
     m = np.stack([vec0, vec1, vec2, pos], 1)
     return m
 
-def normalize(x):
-    """Normalization helper function."""
-    return x / np.linalg.norm(x)
-
-
-def convolve2d(z, f):
-  return signal.convolve2d(z, f, mode='same')
-
-
 def depth_to_normals(depth):
     """Assuming `depth` is orthographic, linearize it to a set of normals."""
     f_blur = np.array([1, 2, 1]) / 4
@@ -132,12 +118,10 @@ def depth_to_normals(depth):
     normals = np.stack([dx * inv_denom, dy * inv_denom, inv_denom], -1)
     return normals
 
-
 def sinebow(h):
     """A cyclic and uniform colormap, see http://basecase.org/env/on-rainbows."""
     f = lambda x: np.sin(np.pi * x)**2
     return np.stack([f(3 / 6 - h), f(5 / 6 - h), f(7 / 6 - h)], -1)
-
 
 def visualize_normals(depth, acc, scaling=None):
     """Visualize fake normals of `depth` (optionally scaled to be isotropic)."""
@@ -226,16 +210,3 @@ def visualize_depth(depth,
 
     return vis
 
-
-def to8b(img):
-    if len(img.shape) >= 3:
-        return np.array([to8b(i) for i in img])
-    else:
-        return (255 * np.clip(np.nan_to_num(img), 0, 1)).astype(np.uint8)
-
-
-def to_float(img):
-    if len(img.shape) >= 3:
-        return np.array([to_float(i) for i in img])
-    else:
-        return (img / 255.).astype(np.float32)

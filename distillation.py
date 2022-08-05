@@ -18,7 +18,7 @@ def bounds(t_vals_fine,fine_weights,t_vals_coarse):
     """
     t_vals_fine = t_vals_fine.detach()
     fine_weights = fine_weights.detach()
-    
+
     t0 = t_vals_fine[...,:-1]
     t1 = t_vals_fine[...,1:]
     T0 = t_vals_coarse[...,:-1]
@@ -43,7 +43,7 @@ def loss_prop(coarse_weights,bounds):
         bounds:torch.tensor(float32), [batch_size, num_samples],bounds of the fine_weight,should be consist with the coarse weight
 
     Returns:
-        loss:torch.tensor(float32),loss of the proposal
+        loss:torch.tensor(float32),loss of the proposal net
     """
     eps = 1e-6
     max_func = nn.ReLU()

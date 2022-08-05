@@ -18,6 +18,7 @@ def bounds(t_vals_fine,fine_weights,t_vals_coarse):
     """
     t_vals_fine = t_vals_fine.detach()
     fine_weights = fine_weights.detach()
+    
     t0 = t_vals_fine[...,:-1]
     t1 = t_vals_fine[...,1:]
     T0 = t_vals_coarse[...,:-1]
@@ -31,7 +32,7 @@ def bounds(t_vals_fine,fine_weights,t_vals_coarse):
         B[...,i] = torch.sum(fine_weights[~((t0>R)|(t1<L))],dim=-1)
     # stop grad of all
     B = B.detach()
-    
+
     return B
 
 def loss_prop(coarse_weights,bounds):

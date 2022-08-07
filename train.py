@@ -11,9 +11,6 @@ import torch.utils.tensorboard as tb
 from loss import Loss_prop,Loss_nerf,mse_to_psnr
 from datasets import get_dataloader, cycle
 
-"""
-其实这里是比较难的，需要写distillation训练策略，打算在distillation中封装一下
-"""
 
 def train_model(config):
     model_save_path = path.join(config.log_dir, "model.pt")
@@ -36,7 +33,7 @@ def train_model(config):
         viewdirs_max_deg=config.viewdirs_max_deg,
         device=config.device
     )
-    # 明天写这部分
+    # 明天写这部分：蒸馏训练策略完全写完！
     model.nerf_net.forward()
     model.prop_net.forward()
     

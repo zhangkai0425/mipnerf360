@@ -28,6 +28,7 @@ def get_config():
     config.add_argument("--viewdirs_min_deg", type=int, default=0)
     config.add_argument("--viewdirs_max_deg", type=int, default=4)
     # loss and optimizer hyperparams
+    config.add_argument("--dist_weight_decay", type=float, default=0.01)
     config.add_argument("--coarse_weight_decay", type=float, default=0.1)
     config.add_argument("--lr_init", type=float, default=1e-3)
     config.add_argument("--lr_final", type=float, default=5e-5)

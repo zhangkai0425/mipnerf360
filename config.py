@@ -17,7 +17,7 @@ def get_config():
     config.add_argument("--white_bkgd", action="store_false")  # should be False if using llff
     config.add_argument("--override_defaults", action="store_true")
     config.add_argument("--num_levels", type=int, default=2)
-    config.add_argument("--num_samples", type=int, default=128)
+    config.add_argument("--num_samples", type=int, default=64)
     config.add_argument("--hidden", type=int, default=256)
     config.add_argument("--density_noise", type=float, default=0.0)
     config.add_argument("--density_bias", type=float, default=-1.0)

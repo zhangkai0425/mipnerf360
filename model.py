@@ -56,24 +56,41 @@ class prop_net(nn.Module):
         _kaiming_init(self)
         self.to(device)
         
-    def density2weight(self,density):
-        return 0
-    
+    def density_to_weight(self,t_vals,density,dirs):
+        """Transform density to weights
+
+        Arguments:
+            t_vals:torch.tensor(float32), [batch_size, num_samples].
+            density:torch.tensor(float32), density, [batch_size, num_samples, 1].
+            dirs:torch.tensor(float32), [batch_size, 3].
+
+        Returns:
+            weights:torch.tensor(float32),[batch_size,num_samples],weights along the rays.
+        """
+        t_dists = t_vals[..., 1:] - t_vals[..., :-1]
+        delta = t_dists * torch.linalg.norm(dirs[..., None, :], dim=-1)
+        density_delta = density[..., 0] * delta
+
+        alpha = 1 - torch.exp(-density_delta)
+        trans = torch.exp(-torch.cat([torch.zeros_like(density_delta[..., :1]),
+        torch.cumsum(density_delta[..., :-1], dim=-1)], dim=-1))
+        weights = alpha * trans
+        return weights
+
     def forward(self,rays):
-        #TODO: sample_along_rays很难实现，真的
         # sample
         t_vals, (mean, var) = sample_along_rays(origins=rays.origins,directions=rays.directions,radii=rays.radii,num_samples=self.num_samples,
-                                                        near=rays.near,far=rays.far)
+                                                        near=rays.near,far=rays.far,randomized=self.randomized)
         # integrated postional encoding(IPE) of samples
         samples_enc = self.positional_encoding(mean,var)
         viewdirs_enc = self.viewdirs_encoding(rays.viewdirs.to(self.device))
         input_enc = torch.cat((samples_enc,viewdirs_enc),-1)
 
-        # predict density
+        # predict density and return weights
         raw_density = self.model(input_enc)
         density = self.density_activation(raw_density + self.density_bias)
-        # 计划是直接在这里增加一个计算weight的函数，返回weight即可
-        return t_vals,density
+        weights = self.density_to_weight(t_vals=t_vals,density=density,dirs=rays.directions.to(density.device))
+        return t_vals,weights
 
 class nerf_net(nn.Module):
     def __init__(self,
@@ -199,12 +216,10 @@ class mipNeRF360(nn.Module):
         self.hidden_nerf = hidden_nerf
         self.density_bias = density_bias
         self.rgb_padding = rgb_padding
-        self.resample_padding = resample_padding #TODO:不知何用，予以保留
+        self.resample_padding = resample_padding 
         self.viewdirs_min_deg = viewdirs_min_deg
         self.viewdirs_max_deg = viewdirs_max_deg
         self.device = device
-
-        self.input_size = 0 #TODO: self.input
 
         # proposal network: depth = 4 width = 256
         self.prop_net = prop_net(randomized=self.randomized,num_samples=self.num_samples,

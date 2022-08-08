@@ -40,10 +40,10 @@ def loss_prop(coarse_weights,bounds):
         bounds:torch.tensor(float32), [batch_size, num_samples],bounds of the fine_weight,should be consist with the coarse weight
 
     Returns:
-        loss:torch.tensor(float32),loss of the proposal net
+        loss:torch.tensor(float32),[batch_size],loss of the proposal net
     """
     eps = 1e-6
     max_func = nn.ReLU()
-    loss = torch.square(max_func(bounds - coarse_weights)) / (coarse_weights + eps)
+    loss = torch.sum(torch.square(max_func(bounds - coarse_weights)) / (coarse_weights + eps),dim=-1)
 
     return loss

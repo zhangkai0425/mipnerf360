@@ -1,12 +1,26 @@
 import torch
-import para
 
-"""
-关于regularization.py做如下部署：
-1.完成t->s的映射的函数，主要是ray.py中其实这部分也要重新修改，
-2.完成w(s)的设计与实现
-3.完成loss_regulariation的设计和代码编写
-4.跑起来JAX的环境，跑自己的数据得到较好的效果-周三之前必须跑出来结果
-5.Pipline跑通-周三之前必须跑通
-6.整理实验文档-周五之前必须完成
-"""
+def t_to_s(t_vals,near,far):
+    """transform t to s:using the formula in the paper"""
+    s_vals = (g(t_vals) - g(near)) / (g(far) - g(near))
+    return s_vals
+
+def loss_dist(t_vals,near,far,weights):
+    """compute the loss_dist according to the paper 
+
+    Arguments:
+        t_vals:torch.tensor,[batch_size,num_samples+1],sampled z values.
+        near:torch.tensor,[batch_size,1],near clip.
+        far:torch.tensor,[batch_size,1],far clip.
+        weights:torch.tensor(float32), weights for t_vals
+
+    Returns:
+        loss_dist:torch.tensor(float32),loss_dist according to the paper  
+    """
+    loss_dist = 0
+    s_vals = t_to_s(t_vals=t_vals,near=near,far=far)
+    for i in range(weights.shape[-1]):
+        for j in range(weights.shape[-1]):
+            loss_dist += weights[i] * weights[j] * torch.abs((s_vals[i] + s_vals[i+1])/2-(s_vals[j] + s_vals[j+1])/2)
+    loss_dist += 1/3 * torch.sum(weights ** 2 * (s_vals[1:]-s_vals[:-1]))
+    return loss_dist

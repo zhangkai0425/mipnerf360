@@ -9,7 +9,7 @@ from config import get_config
 from scheduler import lr_decay
 import torch.utils.tensorboard as tb
 from loss import Loss_prop,Loss_nerf,Loss_dist,mse_to_psnr
-from datasets import get_dataloader, cycle
+from dataset import get_dataloader, cycle
 
 
 def train_model(config):
@@ -29,13 +29,10 @@ def train_model(config):
         density_bias=config.density_bias,
         rgb_padding=config.rgb_padding,
         resample_padding=config.resample_padding,
-        viewdirs_min_deg=config.viewdirs_min_deg,
-        viewdirs_max_deg=config.viewdirs_max_deg,
+        viewdir_min_deg=config.viewdir_min_deg,
+        viewdir_max_deg=config.viewdir_max_deg,
         device=config.device
     )
-    
-    model.nerf_net.forward()
-    model.prop_net.forward()
     
     optimizer = optim.AdamW(model.parameters(), lr=config.lr_init, weight_decay=config.weight_decay)
     if config.continue_training:
@@ -52,10 +49,10 @@ def train_model(config):
 
     # 准备修改为enumerate的形式
     print_every = 100
-
+    
     for step in range(0, config.max_steps):
         rays, pixels = next(data)
-        if step % 3 == 0 or ste % 3 == 1:
+        if step % 3 == 0 or step % 3 == 1:
             t_hat,w_hat = model.prop_net.forward(rays)
             _,_,_,t,w,_ = model.nerf_net.forward(rays,t_vals=t_hat,coarse_weights=w_hat)
             t = t.detach()
@@ -90,11 +87,12 @@ def train_model(config):
             logger.add_scalar('train/loss', float(loss_all.detach().cpu().numpy()), global_step=step)
             logger.add_scalar('train/avg_psnr', float(np.mean(psnr)), global_step=step)
             logger.add_scalar('train/lr', float(scheduler.get_last_lr()[-1]), global_step=step)
+            print("[step=%s]:"%(step),"coarse_psnr=%s,fine_psnr=%s,avg_psnr=%s"%( float(np.mean(psnr[:-1])),float(psnr[-1]),float(np.mean(psnr))))
 
 
             
-        if step % print_every == 0 and step != 0:
-            print("[step=%s]:"%(step),"coarse_psnr=%s,fine_psnr=%s,avg_psnr=%s"%( float(np.mean(psnr[:-1])),float(psnr[-1]),float(np.mean(psnr))))
+        # if step % print_every == 0 and step != 0:
+        #     print("[step=%s]:"%(step),"coarse_psnr=%s,fine_psnr=%s,avg_psnr=%s"%( float(np.mean(psnr[:-1])),float(psnr[-1]),float(np.mean(psnr))))
 
     #     if step % config.save_every == 0:
     #         if eval_data:

@@ -3,8 +3,11 @@ Pytorch implementation of Mip-NeRF360
 
 # 战略规划
 
-### 周一写完train.py
 ### 周二写完test.py
+
+周二需要做的事情如下：早晨debug解决神经网络维度的错误，使神经网络能够跑通;上午解决resample在s空间还是t空间采样的问题;
+中午解决train.py的打印记录的细节问题;下午解决损失函数是否正确的问题;下午写完video.py,解决渲染视频的问题;下午解决其他各类问题,争取明天晚上能跑起来
+
 ### 周三完善，跑通pipeline
 ### 周四完善，跑通pipeline
 ### 周五完善，跑通，写文档

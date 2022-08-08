@@ -181,7 +181,7 @@ class nerf_net(nn.Module):
         # volumetric rendering
         rgb = raw_rgb * (1 + 2 * self.rgb_padding) - self.rgb_padding
         density = self.density_activation(raw_density + self.density_bias)
-        comp_rgb,distance,acc,weights = volumetric_rendering(rgb=rgb, density=density, t_vals=t_vals, dirs=rays.directions.to(rgb.device),white_bkgd=self.white_bkgd)
+        comp_rgb,distance,acc,weights = volumetric_rendering(rgb=rgb, density=density, t_vals=t_vals, dirs=rays.directions.to(rgb.device),white_bkgd=False)
         
         final_rgbs = comp_rgb
         final_dist = distance

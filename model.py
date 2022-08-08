@@ -3,6 +3,7 @@ import torch.nn as nn
 from ray import sample_along_rays,resample_along_rays,volumetric_rendering
 from encoding import PositionalEncoding,ViewdirectionEncoding
 from torch.nn.modules.activation import Sigmoid
+from regularization import t_to_s
 
 def _kaiming_init(model):
     """perform kaiming initialization to the model"""
@@ -61,7 +62,7 @@ class prop_net(nn.Module):
     def forward(self,rays):
         #TODO: sample_along_rays很难实现，真的
         # sample
-        s_vals, (mean, var) = sample_along_rays(origins=rays.origins,directions=rays.directions,radii=rays.radii,num_samples=self.num_samples,
+        t_vals, (mean, var) = sample_along_rays(origins=rays.origins,directions=rays.directions,radii=rays.radii,num_samples=self.num_samples,
                                                         near=rays.near,far=rays.far)
         # integrated postional encoding(IPE) of samples
         samples_enc = self.positional_encoding(mean,var)
@@ -72,7 +73,7 @@ class prop_net(nn.Module):
         raw_density = self.model(input_enc)
         density = self.density_activation(raw_density + self.density_bias)
         # 计划是直接在这里增加一个计算weight的函数，返回weight即可
-        return s_vals,density
+        return t_vals,density
 
 class nerf_net(nn.Module):
     def __init__(self,
@@ -163,21 +164,18 @@ class nerf_net(nn.Module):
         density = self.density_activation(raw_density + self.density_bias)
         comp_rgb,distance,acc,weights = volumetric_rendering(rgb=rgb, density=density, t_vals=t_vals, dirs=rays.directions.to(rgb.device),white_bkgd=self.white_bkgd)
         
-        final_rgbs.append(comp_rgb)
-        final_dist.append(distance)
-        final_accs.append(acc)
+        final_rgbs = comp_rgb
+        final_dist = distance
+        final_accs = acc
 
         # save the weights of nerf_net,used in the distillation section
         self.fine_weights = weights
+        # save the s_vals of nerf_net,used in the regularization section
+        self.s_vals = t_to_s(t_vals=t_vals,near=rays.near,far=rays.far)
 
         # return everything 
-        if self.return_raw:
-            raws = torch.cat((torch.clone(rgb).detach(), torch.clone(density).detach()), -1).cpu()
-            # Predicted RGB values for rays, Disparity map (inverse of depth), Accumulated opacity (alpha) along a ray
-            return torch.stack(final_rgbs), torch.stack(final_dist), torch.stack(final_accs), raws
-        else:
-            # Predicted RGB values for rays, Disparity map (inverse of depth), Accumulated opacity (alpha) along a ray
-            return torch.stack(final_rgbs), torch.stack(final_dist), torch.stack(final_accs)
+        # Predicted RGB values for rays, Disparity map (inverse of depth), Accumulated opacity (alpha) along a ray,Fine weights,S vals
+        return final_rgbs, final_dist, final_accs,self.fine_weights,self.s_vals
 
 class mipNeRF360(nn.Module):
     def __init__(self,

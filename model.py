@@ -36,7 +36,7 @@ class prop_net(nn.Module):
         self.positional_encoding = PositionalEncoding()
         self.viewdirs_encoding = ViewdirectionEncoding(self.viewdir_min_deg,self.viewdir_max_deg)
 
-        self.input_size = 21*3*2 + (self.viewdir_max_deg-self.viewdir_min_deg) * 2 * 2 #TODO: self.input
+        self.input_size = 21*2 + (self.viewdir_max_deg-self.viewdir_min_deg) * 2 * 2 #TODO: self.input
         self.density_activation = nn.Softplus()
 
         # proposal network: depth = 4 width = 256
@@ -84,6 +84,7 @@ class prop_net(nn.Module):
         # integrated postional encoding(IPE) of samples
         samples_enc = self.positional_encoding(mean,var)
         viewdirs_enc = self.viewdirs_encoding(rays.viewdirs.to(self.device))
+        viewdirs_enc = viewdirs_enc[:,None,:].repeat(1,samples_enc.shape[1],1)
         input_enc = torch.cat((samples_enc,viewdirs_enc),-1)
 
         # predict density and return weights
@@ -169,6 +170,7 @@ class nerf_net(nn.Module):
         # integrated postional encoding(IPE) of samples
         samples_enc = self.positional_encoding(mean=mean,var=var)
         viewdirs_enc = self.viewdirs_encoding(rays.viewdirs.to(self.device))
+        viewdirs_enc = viewdirs_enc[:,None,:].repeat(1,samples_enc.shape[1],1)
         input_enc = torch.cat((samples_enc,viewdirs_enc),-1)
 
         # predict density and color

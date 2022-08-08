@@ -185,14 +185,15 @@ class nerf_net(nn.Module):
         final_dist = distance
         final_accs = acc
 
-        # save the weights of nerf_net,used in the distillation section
+        # save the weights and t_vals of nerf_net,used in the distillation section
         self.fine_weights = weights
+        self.t_vals = t_vals
         # save the s_vals of nerf_net,used in the regularization section
         self.s_vals = t_to_s(t_vals=t_vals,near=rays.near,far=rays.far)
 
         # return everything 
         # Predicted RGB values for rays, Disparity map (inverse of depth), Accumulated opacity (alpha) along a ray,Fine weights,S vals
-        return final_rgbs, final_dist, final_accs,self.fine_weights,self.s_vals
+        return final_rgbs, final_dist, final_accs, self.t_vals, self.fine_weights, self.s_vals
 
 class mipNeRF360(nn.Module):
     def __init__(self,

@@ -164,11 +164,11 @@ class nerf_net(nn.Module):
         final_accs = []
 
         # resample
-        t_vals,(mean,var) = resample_along_rays(origins=rays.origins,directions=rays.directions,radii=rays.radii,
+        t_vals,(mean,cov) = resample_along_rays(origins=rays.origins,directions=rays.directions,radii=rays.radii,
                             t_vals=t_vals.to(rays.origins.device),weights=coarse_weights,randomized=self.randomized,resample_padding=self.resample_padding)
         
         # integrated postional encoding(IPE) of samples
-        samples_enc = self.positional_encoding(mean=mean,var=var)
+        samples_enc = self.positional_encoding(mean=mean,cov=cov)
         viewdirs_enc = self.viewdirs_encoding(rays.viewdirs.to(self.device))
         viewdirs_enc = viewdirs_enc[:,None,:].repeat(1,samples_enc.shape[1],1)
         input_enc = torch.cat((samples_enc,viewdirs_enc),-1)

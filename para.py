@@ -34,7 +34,7 @@ def gaussian_to_xyz(d, t_mean, t_var, r_var, diag=False):
     """
     mean = d[...,None,:] * t_mean[...,None]
 
-    d_mag_sq = torch.maximum(torch.sum(d ** 2,dim=-1,keepdim=True),torch.tensor([1e-10]))
+    d_mag_sq = torch.maximum(torch.sum(d ** 2,dim=-1,keepdim=True),torch.tensor([1e-10]).to(d.device))
     if diag:
         d_outer_diag = d ** 2
         null_outer_diag = 1 - d_outer_diag / d_mag_sq
@@ -63,9 +63,12 @@ def gaussian_contract(mean,cov):
         cov,tensor.float32,contracted cov matrix
     """
     mean = contract(mean)
-    Jf = jacobian(contract,mean)
+    Jf = torch.zeros((mean.shape[0],mean.shape[1],3,3),device=mean.device)
+    for batch in range(mean.shape[0]):
+        for num_samples in range(mean.shape[1]):
+            Jf[batch][num_samples] = jacobian(contract,mean[batch][num_samples])
     cov = torch.matmul(Jf,cov)
-    cov = torch.matmul(cov,Jf.T)
+    cov = torch.matmul(cov,Jf.transpose(2,3))
 
     return mean, cov
 

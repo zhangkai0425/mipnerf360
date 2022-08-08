@@ -77,14 +77,14 @@ class ViewdirectionEncoding(nn.Module):
         """
         # compute theta and phi using viewdirs unit normal vector:n=(x,y,z)
         self.scales = self.scales.to(device=viewdirs.device)
-        print("debug here::",viewdirs.shape)
-        # assert 1==0,"debug here！！！！"
-        x,y,z = viewdirs[...,0],viewdirs[...,1],viewdirs[...,2]
+        x,y,z = viewdirs[...,0,None],viewdirs[...,1,None],viewdirs[...,2,None]
         theta = torch.arccos(z)
         phi = torch.arctan(y/(x+1e-6))
+        print
 
         # encoding the theta and phi
         theta = self.scales * theta
         phi = self.scales * phi
+
         enc = torch.cat((torch.sin(theta),torch.cos(theta),torch.sin(phi),torch.cos(phi)),-1)
         return enc

@@ -10,11 +10,6 @@ def g(x):
     s = 1/x
     return s
 
-def t_to_s(t_vals,near,far):
-    """transform t to s:using the formula in the paper"""
-    s_vals = (g(t_vals) - g(near)) / (g(far) - g(near))
-    return s_vals
-
 def contract(x):
     """contract function of x,used in parameterization"""
     x_norm = torch.norm(x)

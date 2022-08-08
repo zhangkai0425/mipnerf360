@@ -60,11 +60,12 @@ def train_model(config):
 
             # Compute loss and update model weights.
             loss_prop = Loss_prop(t=t,w=w,t_hat=t_hat,w_hat=w_hat)
-
+            print("debug here::",loss_prop)
             optimizer.zero_grad()
             loss_prop.backward()
             optimizer.step()
             scheduler.step()
+            print("[step=%s]:"%(step),"loss_prop=%s"%(loss_prop.detach()))
 
         else:
             t_hat,w_hat = model.prop_net.forward(rays)
@@ -87,7 +88,7 @@ def train_model(config):
             logger.add_scalar('train/loss', float(loss_all.detach().cpu().numpy()), global_step=step)
             logger.add_scalar('train/avg_psnr', float(np.mean(psnr)), global_step=step)
             logger.add_scalar('train/lr', float(scheduler.get_last_lr()[-1]), global_step=step)
-            print("[step=%s]:"%(step),"coarse_psnr=%s,fine_psnr=%s,avg_psnr=%s"%( float(np.mean(psnr[:-1])),float(psnr[-1]),float(np.mean(psnr))))
+            print("[step=%s]:"%(step),"avg_psnr=%s"%(float(np.mean(psnr))))
 
 
             

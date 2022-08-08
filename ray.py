@@ -90,7 +90,7 @@ def sample_along_rays(origins,directions,radii,num_samples,near,far,randomized):
         far:torch.tensor,[batch_size,1],far clip.
     
     Returns:
-        t_vals:torch.tensor,[batch_size,num_samples],sampled z values.
+        t_vals:torch.tensor,[batch_size,num_samples+1],sampled z values.
         means:torch.tensor,[batch_size,num_samples,3],sampled means.
         covs:torch.tensor,[batch_size,num_samples,3,3],sampled covariances.
     """
@@ -128,7 +128,7 @@ def resample_along_rays(origins,directions,radii,t_vals,weights,randomized,resam
         resample_padding:float, added to the weights before normalizing.
 
     Returns:
-        t_vals: torch.tensor, [batch_size, num_samples], sampled z values.
+        t_vals: torch.tensor, [batch_size, num_samples+1], sampled z values.
         means: torch.tensor, [batch_size, num_samples, 3], sampled means.
         covs:torch.tensor,[batch_size,num_samples,3,3],sampled covariances.
     """

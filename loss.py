@@ -1,9 +1,10 @@
 import torch
 import torch.nn as nn
 from distillation import bounds,loss_prop
+from regularization import loss_dist
 
 def Loss_prop(t,w,t_hat,w_hat):
-    """comput the Loss_prop
+    """comput the proposal loss of prop_net
 
     Arguments:
         t:torch.tensor(float32), [batch_size, num_samples+1],t_vals from the nerf_net.
@@ -20,7 +21,7 @@ def Loss_prop(t,w,t_hat,w_hat):
     return loss
 
 def Loss_nerf(input,target):
-    """compute the reconstrucn
+    """compute the reconstruction loss of nerf_net
 
     Arguments:
         input:torch.tensor(float32), [batch_size, 3],input rgb color of batch rays.
@@ -36,7 +37,20 @@ def Loss_nerf(input,target):
 
     return mse_loss,psnr
 
+def Loss_dist(s_vals,weights):
+    """compute the distance loss of rays distances and weights
+
+    Arguments:
+        s_vals:torch.tensor,[batch_size,num_samples+1],sampled disparity values.
+        weights:torch.tensor(float32), weights for t_vals
+
+    Returns:
+        loss:torch.tensor(float32),loss_dist according to the paper  
+    """
+    loss = loss_dist(s_vals=s_vals,weights=weights)
+    return loss
+
+
 def mse_to_psnr(mse):
     """transform mse to psnr"""
     return -10.0 * torch.log10(mse)
-    

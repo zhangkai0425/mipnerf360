@@ -26,7 +26,7 @@ def bounds(t_vals_fine,fine_weights,t_vals_coarse):
     # use for loop,only 128 times,so don't worry the cost of time
     for i in range(fine_weights.shape[-1]):
         L,R = T0[...,i],T1[...,i]
-        B[...,i] = torch.sum(fine_weights[~((t0>R)|(t1<L))],dim=-1)
+        B[...,i] = torch.sum(fine_weights[...,~((t0>R)|(t1<L))],dim=-1)
     # stop grad of all
     B = B.detach()
 

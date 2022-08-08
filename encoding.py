@@ -1,5 +1,5 @@
 import torch
-from torch._C import dtype
+from torch._C import device, dtype
 import torch.nn as nn
 
 class PositionalEncoding(nn.Module):
@@ -27,23 +27,29 @@ class PositionalEncoding(nn.Module):
                   [-0.5,0.309017,0.809017],
                   [-0.809017,0.5,0.309017],
                   [-0.809017,0.5,-0.309017]
-                    ],requires_grad=False)
+                    ],requires_grad=False) # shape:[21,3]
+        
 
     def forward(self, mean, cov):
         """forward function of positional encoding
 
         Arguments:
-            mean,torch.float32,shape(batch_size,num_samples,3),mean of each num_samples of xyz(contracted)
-            cov,torch.float32,shape(batch_size,num_samples,3,3),cov of each num_samples of xyz(contracted)
+            mean:torch.float32,[batch_size,num_samples,3],mean of each num_samples of xyz(contracted)
+            cov:torch.float32,[batch_size,num_samples,3,3],cov of each num_samples of xyz(contracted)
 
         Returns:
-            enc,torch.float32,shape(batch_size,num_samples,21*2,3),postional_encoding
+            enc:torch.float32,[batch_size,num_samples,21*2],postional_encoding
         """
-        mean_gamma = torch.matmul(self.P,mean)
+        self.P = self.P.to(device=mean.device)
+        mean = mean[...,None]
+        mean_gamma = torch.matmul(self.P,mean).squeeze(dim=-1)
+        
         if cov is not None:
             # IPE
             A = torch.matmul(cov,self.P.T)
-            sigma = torch.sum(self.P.T * A,dim=3) #TODO: 这里维度需要再仔细注意！
+            # A:shape = [batch_size,num_samples,3,21]
+            sigma = torch.sum(self.P.T * A,dim=2) 
+            # sigma:shape = [batch_size,num_samples,21]
             enc_sin = torch.exp(-0.5*sigma) * torch.sin(mean_gamma)
             enc_cos = torch.exp(-0.5*sigma) * torch.cos(mean_gamma)
             enc = torch.cat((enc_sin,enc_cos),-1)
@@ -64,13 +70,16 @@ class ViewdirectionEncoding(nn.Module):
         """forward function of viewdirection encoding
 
         Arguments:
-            viewdirs:torch.tensor(float32),[batchsize,num_sampls,3],view direction of each samples
+            viewdirs:torch.tensor(float32),[batchsize,3],view direction of each samples
             
         Returns:
             enc:torch.float32,[batch_size,num_samples,(viewdir_max_deg-viewdir_min_deg)*2],viewdirection_encoding
         """
         # compute theta and phi using viewdirs unit normal vector:n=(x,y,z)
-        x,y,z = viewdirs[:,:,0],viewdirs[:,:,1],viewdirs[:,:,2]
+        self.scales = self.scales.to(device=viewdirs.device)
+        print("debug here::",viewdirs.shape)
+        # assert 1==0,"debug here！！！！"
+        x,y,z = viewdirs[...,0],viewdirs[...,1],viewdirs[...,2]
         theta = torch.arccos(z)
         phi = torch.arctan(y/(x+1e-6))
 

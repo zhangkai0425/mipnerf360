@@ -34,7 +34,7 @@ class prop_net(nn.Module):
 
         # IPE module
         self.positional_encoding = PositionalEncoding()
-        self.viewdirs_encoding = ViewdirectionEncoding(self.viewdirs_min_deg,self.viewdirs_max_deg)
+        self.viewdirs_encoding = ViewdirectionEncoding(self.viewdir_min_deg,self.viewdir_max_deg)
 
         self.input_size = 21*3*2 + (self.viewdir_max_deg-self.viewdir_min_deg) * 2 * 2 #TODO: self.input
         self.density_activation = nn.Softplus()
@@ -204,8 +204,8 @@ class mipNeRF360(nn.Module):
                  density_bias=-1,
                  rgb_padding=0.001,
                  resample_padding=0.01,
-                 viewdirs_min_deg=0,
-                 viewdirs_max_deg=4,
+                 viewdir_min_deg=0,
+                 viewdir_max_deg=4,
                  device=torch.device("cuda"),
                  ):
         super().__init__()
@@ -218,20 +218,20 @@ class mipNeRF360(nn.Module):
         self.density_bias = density_bias
         self.rgb_padding = rgb_padding
         self.resample_padding = resample_padding 
-        self.viewdirs_min_deg = viewdirs_min_deg
-        self.viewdirs_max_deg = viewdirs_max_deg
+        self.viewdir_min_deg = viewdir_min_deg
+        self.viewdir_max_deg = viewdir_max_deg
         self.device = device
 
         # proposal network: depth = 4 width = 256
         self.prop_net = prop_net(randomized=self.randomized,num_samples=self.num_samples,
                         hidden_proposal=self.hidden_proposal,density_bias=self.density_bias,
-                        viewdir_min_deg=self.viewdirs_min_deg,viewdir_max_deg=self.viewdirs_max_deg,
+                        viewdir_min_deg=self.viewdir_min_deg,viewdir_max_deg=self.viewdir_max_deg,
                         device=self.device)
 
         # nerf network: depth = 8 width = 1024
         self.nerf_net = nerf_net(randomized=self.randomized,num_samples=self.num_samples,
                         hidden_nerf=self.hidden_nerf,density_bias=self.density_bias,rgb_padding=self.rgb_padding,
-                        resample_padding=self.resample_padding,viewdir_min_deg=self.viewdirs_min_deg,viewdir_max_deg=self.viewdirs_max_deg,
+                        resample_padding=self.resample_padding,viewdir_min_deg=self.viewdir_min_deg,viewdir_max_deg=self.viewdir_max_deg,
                         device=self.device)
 
         self.to(device)

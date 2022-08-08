@@ -16,9 +16,6 @@ def bounds(t_vals_fine,fine_weights,t_vals_coarse):
         bounds:torch.tensor(float32), [batch_size, num_samples],bounds of the fine_weight,should be consist with the coarse weight.
         therefore the coarse_weight becomes the envelope of the fine_weight.
     """
-    t_vals_fine = t_vals_fine.detach()
-    fine_weights = fine_weights.detach()
-
     t0 = t_vals_fine[...,:-1]
     t1 = t_vals_fine[...,1:]
     T0 = t_vals_coarse[...,:-1]

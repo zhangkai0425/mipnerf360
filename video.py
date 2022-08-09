@@ -2,11 +2,11 @@ import torch
 import imageio
 from os import path
 from tqdm import tqdm
-from utils import to8b
 from model import mipNeRF360
+from intern.utils import to8b
 from config import get_config
 from dataset import get_dataloader
-from pose import visualize_depth, visualize_normals
+from intern.pose import visualize_depth, visualize_normals
 
 
 def visualize(config):

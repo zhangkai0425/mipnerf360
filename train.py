@@ -8,8 +8,8 @@ from model import mipNeRF360
 from config import get_config
 from scheduler import lr_decay
 import torch.utils.tensorboard as tb
-from loss import Loss_prop,Loss_nerf,Loss_dist,mse_to_psnr
 from dataset import get_dataloader, cycle
+from loss import Loss_prop,Loss_nerf,Loss_dist,mse_to_psnr
 
 
 def train_model(config):
@@ -19,7 +19,7 @@ def train_model(config):
     data = iter(cycle(get_dataloader(dataset_name=config.dataset_name, base_dir=config.base_dir, split="train", factor=config.factor, batch_size=config.batch_size, shuffle=True, device=config.device)))
     eval_data = None
     if config.do_eval:
-        eval_data = iter(cycle(get_dataloader(dataset_name=config.dataset_name, base_dir=config.base_dir, split="test", factor=config.factor, batch_size=config.batch_size, shuffle=True, device=config.device)))
+        eval_data = iter(cycle(get_dataloader(dataset_name=config.dataset_name, base_dir=config.base_dir, split="eval", factor=config.factor, batch_size=config.batch_size, shuffle=True, device=config.device)))
 
     model = mipNeRF360(
         randomized=config.randomized,
@@ -29,6 +29,7 @@ def train_model(config):
         density_bias=config.density_bias,
         rgb_padding=config.rgb_padding,
         resample_padding=config.resample_padding,
+        white_bkgd=config.white_bkgd,
         viewdir_min_deg=config.viewdir_min_deg,
         viewdir_max_deg=config.viewdir_max_deg,
         device=config.device
@@ -46,9 +47,6 @@ def train_model(config):
     os.makedirs(config.log_dir, exist_ok=True)
     shutil.rmtree(path.join(config.log_dir, 'train'), ignore_errors=True)
     logger = tb.SummaryWriter(path.join(config.log_dir, 'train'), flush_secs=1)
-
-    # 准备修改为enumerate的形式
-    print_every = 10
     
     for step in range(0, config.max_steps):
         rays, pixels = next(data)
@@ -90,31 +88,23 @@ def train_model(config):
         print("[step=%s]:"%(step),"avg_psnr=%s"%(float(np.mean(psnr))))
 
         # evaluate the model
-        if step % print_every == 0 and step != 0:
+        if step % config.eval_every == 0 and step != 0:
             del rays
             del pixels
             psnr = eval_model(config, model, eval_data)
             print("[step=%s]:"%(step),"eval psnr=%s"%psnr)
 
-    #     if step % config.save_every == 0:
-    #         if eval_data:
-    #             del rays
-    #             del pixels
-    #             psnr = eval_model(config, model, eval_data)
-    #             psnr = psnr.detach().cpu().numpy()
-                
-    #             logger.add_scalar('eval/coarse_psnr', float(np.mean(psnr[:-1])), global_step=step)
-    #             logger.add_scalar('eval/fine_psnr', float(psnr[-1]), global_step=step)
-    #             logger.add_scalar('eval/avg_psnr', float(np.mean(psnr)), global_step=step)
+        # save the model
+        if step % config.save_every == 0:
+            torch.save(model.state_dict(), path.join(config.log_dir, "model_%s.pt"%(step)))
+            torch.save(optimizer.state_dict(), path.join(config.log_dir, "optim_%s.pt"%(step)))
 
-    #         torch.save(model.state_dict(), path.join(config.log_dir, "model_%s.pt"%(step)))
-    #         torch.save(optimizer.state_dict(), path.join(config.log_dir, "optim_%s.pt"%(step)))
-
-    # torch.save(model.state_dict(), model_save_path)
-    # torch.save(optimizer.state_dict(), optimizer_save_path)
+    torch.save(model.state_dict(), model_save_path)
+    torch.save(optimizer.state_dict(), optimizer_save_path)
 
 
 def eval_model(config, model, data):
+    """Evaluate the model"""
     model.eval()
     rays, pixels = next(data)
     with torch.no_grad():

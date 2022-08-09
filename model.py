@@ -240,7 +240,10 @@ class mipNeRF360(nn.Module):
 
     def forward(self,rays):
         #TODO:forward to output final density and color
-        return 0
+        t_hat,w_hat = self.prop_net.forward(rays)
+        final_rgbs, final_dist, final_accs,_,_,_ = self.nerf_net.forward(rays,t_vals=t_hat,coarse_weights=w_hat)
+        
+        return final_rgbs, final_dist, final_accs
     
     def render_image(self,rays,height,width,chunks=4096):
         #TODO:use the final density and color to render a complete image

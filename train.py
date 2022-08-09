@@ -52,7 +52,7 @@ def train_model(config):
     
     for step in range(0, config.max_steps):
         rays, pixels = next(data)
-        if step % 3 == 0 or step % 3 == 1:
+        for _ in range(2):
             t_hat,w_hat = model.prop_net.forward(rays)
             _,_,_,t,w,_ = model.nerf_net.forward(rays,t_vals=t_hat,coarse_weights=w_hat)
             t = t.detach()
@@ -60,36 +60,34 @@ def train_model(config):
 
             # Compute loss and update model weights.
             loss_prop = Loss_prop(t=t,w=w,t_hat=t_hat,w_hat=w_hat)
-            print("debug here::",loss_prop)
             optimizer.zero_grad()
             loss_prop.backward()
             optimizer.step()
             scheduler.step()
             print("[step=%s]:"%(step),"loss_prop=%s"%(loss_prop.detach()))
 
-        else:
-            t_hat,w_hat = model.prop_net.forward(rays)
-            t_hat = t_hat.detach()
-            w_hat = w_hat.detach()
-            final_rgbs,_,_,_,fine_weights,s_vals = model.nerf_net.forward(rays,t_vals=t_hat,coarse_weights=w_hat)
-            pixels = pixels.to(config.device)
 
-            # Compute loss and update model weights.
-            loss_nerf,psnr = Loss_nerf(input=final_rgbs,target=pixels)
-            loss_dist = Loss_dist(s_vals=s_vals,weights=fine_weights)
-            loss_all = loss_nerf + config.dist_weight_decay * loss_dist
-            
-            optimizer.zero_grad()
-            loss_all.backward()
-            optimizer.step()
-            scheduler.step()
+        t_hat,w_hat = model.prop_net.forward(rays)
+        t_hat = t_hat.detach()
+        w_hat = w_hat.detach()
+        final_rgbs,_,_,_,fine_weights,s_vals = model.nerf_net.forward(rays,t_vals=t_hat,coarse_weights=w_hat)
+        pixels = pixels.to(config.device)
 
-            psnr = psnr.detach().cpu().numpy()
-            logger.add_scalar('train/loss', float(loss_all.detach().cpu().numpy()), global_step=step)
-            logger.add_scalar('train/avg_psnr', float(np.mean(psnr)), global_step=step)
-            logger.add_scalar('train/lr', float(scheduler.get_last_lr()[-1]), global_step=step)
-            print("[step=%s]:"%(step),"avg_psnr=%s"%(float(np.mean(psnr))))
+        # Compute loss and update model weights.
+        loss_nerf,psnr = Loss_nerf(input=final_rgbs,target=pixels)
+        loss_dist = Loss_dist(s_vals=s_vals,weights=fine_weights)
+        loss_all = loss_nerf + config.dist_weight_decay * loss_dist
+        print("loss_nerf::",loss_nerf,loss_dist,loss_all)
+        optimizer.zero_grad()
+        loss_all.backward()
+        optimizer.step()
+        scheduler.step()
 
+        psnr = psnr.detach().cpu().numpy()
+        logger.add_scalar('train/loss', float(loss_all.detach().cpu().numpy()), global_step=step)
+        logger.add_scalar('train/avg_psnr', float(np.mean(psnr)), global_step=step)
+        logger.add_scalar('train/lr', float(scheduler.get_last_lr()[-1]), global_step=step)
+        print("[step=%s]:"%(step),"avg_psnr=%s"%(float(np.mean(psnr))))
 
             
         # if step % print_every == 0 and step != 0:

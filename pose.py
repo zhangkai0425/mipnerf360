@@ -1,4 +1,5 @@
 import numpy as np
+from utils import normalize,convolve2d
 from scipy import signal
 import matplotlib.cm as cm
 
@@ -48,26 +49,26 @@ def generate_spherical_cam_to_world(radius, n_poses=120):
             [0, 1, 0, 0],
             [0, 0, 1, t],
             [0, 0, 0, 1],
-        ], dtype=np.float)
+        ], dtype=np.float32)
 
         rotation_phi = lambda phi: np.array([
             [1, 0, 0, 0],
             [0, np.cos(phi), -np.sin(phi), 0],
             [0, np.sin(phi), np.cos(phi), 0],
             [0, 0, 0, 1],
-        ], dtype=np.float)
+        ], dtype=np.float32)
 
         rotation_theta = lambda th: np.array([
             [np.cos(th), 0, -np.sin(th), 0],
             [0, 1, 0, 0],
             [np.sin(th), 0, np.cos(th), 0],
             [0, 0, 0, 1],
-        ], dtype=np.float)
+        ], dtype=np.float32)
         cam_to_world = trans_t(radius)
         cam_to_world = rotation_phi(phi / 180. * np.pi) @ cam_to_world
         cam_to_world = rotation_theta(theta) @ cam_to_world
         cam_to_world = np.array([[-1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]],
-                                dtype=np.float) @ cam_to_world
+                                dtype=np.float32) @ cam_to_world
         return cam_to_world
 
     spheric_cams = []

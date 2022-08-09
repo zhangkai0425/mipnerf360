@@ -1,9 +1,9 @@
 import torch
 import torch.nn as nn
-from ray import sample_along_rays,resample_along_rays,volumetric_rendering
+from utils import to8b
+from para import t_to_s
+from ray import sample_along_rays,resample_along_rays,volumetric_rendering,namedtuple_map
 from encoding import PositionalEncoding,ViewdirectionEncoding
-from torch.nn.modules.activation import Sigmoid
-from regularization import t_to_s
 
 def _kaiming_init(model):
     """perform kaiming initialization to the model"""
@@ -223,6 +223,8 @@ class mipNeRF360(nn.Module):
         self.viewdir_min_deg = viewdir_min_deg
         self.viewdir_max_deg = viewdir_max_deg
         self.device = device
+        
+        self.init_randomized = randomized
 
         # proposal network: depth = 4 width = 256
         self.prop_net = prop_net(randomized=self.randomized,num_samples=self.num_samples,
@@ -239,12 +241,38 @@ class mipNeRF360(nn.Module):
         self.to(device)
 
     def forward(self,rays):
-        #TODO:forward to output final density and color
+        """return everything that can render an image"""
         t_hat,w_hat = self.prop_net.forward(rays)
         final_rgbs, final_dist, final_accs,_,_,_ = self.nerf_net.forward(rays,t_vals=t_hat,coarse_weights=w_hat)
         
         return final_rgbs, final_dist, final_accs
     
     def render_image(self,rays,height,width,chunks=4096):
-        #TODO:use the final density and color to render a complete image
-        return 0
+        """return image,disparity map,accumulated opacity """
+        # batch_size
+        length = rays[0].shape[0] 
+        rgbs = []
+        dists = []
+        accs = []
+        with torch.no_grad():
+            for i in range(0, length, chunks):
+                # put chunk of rays on device
+                chunk_rays = namedtuple_map(lambda r: r[i:i+chunks].to(self.device), rays)
+                rgb, distance, acc = self(chunk_rays)
+                rgbs.append(rgb[-1].cpu())
+                dists.append(distance[-1].cpu())
+                accs.append(acc[-1].cpu())
+        rgbs = to8b(torch.cat(rgbs, dim=0).reshape(height, width, 3).numpy())
+        dists = torch.cat(dists, dim=0).reshape(height, width).numpy()
+        accs = torch.cat(accs, dim=0).reshape(height, width).numpy()
+
+        return rgbs, dists, accs
+    
+    def train(self, mode=True):
+        self.randomized = self.init_randomized
+        super().train(mode)
+        return self
+
+    def eval(self):
+        self.randomized = False
+        return super().eval()

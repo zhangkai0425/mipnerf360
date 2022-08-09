@@ -79,7 +79,7 @@ def convert_to_ndc(origins,directions,focal,w,h,near=1.0):
     return origins, directions
 
 def sample_along_rays(origins,directions,radii,num_samples,near,far,randomized):
-    """[summary]
+    """Sample along rays.
 
     Arguments:
         origins:torch.tensor(float32),[batch_size,3],ray origins.

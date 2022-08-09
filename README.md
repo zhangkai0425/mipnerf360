@@ -1,5 +1,6 @@
-# Mip-NeRF360
-Pytorch implementation of Mip-NeRF360
+# mipnerf-360
+
+## Pytorch implementation of Mip-NeRF360
 
 # 战略规划
 

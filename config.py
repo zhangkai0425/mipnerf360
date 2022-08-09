@@ -31,7 +31,7 @@ def get_config():
     # loss and optimizer hyperparams
     config.add_argument("--dist_weight_decay", type=float, default=0.01)
     config.add_argument("--lr_init", type=float, default=2e-3)
-    config.add_argument("--lr_final", type=float, default=2e-5)
+    config.add_argument("--lr_final", type=float, default=2e-4)
     config.add_argument("--lr_delay_steps", type=int, default=2500)
     config.add_argument("--lr_delay_mult", type=float, default=0.1)
     config.add_argument("--weight_decay", type=float, default=1e-5)
@@ -41,7 +41,9 @@ def get_config():
     config.add_argument("--batch_size", type=int, default=64)
     config.add_argument("--do_eval", action="store_false")
     config.add_argument("--continue_training", action="store_true")
-    config.add_argument("--save_every", type=int, default=10000)
+    config.add_argument("--save_every", type=int, default=100)
+    config.add_argument("--print_every", type=int, default=10)
+    config.add_argument("--eval_every", type=int, default=10)
     config.add_argument("--device", type=str, default="cuda")
     # visualization hyperparams
     config.add_argument("--chunks", type=int, default=4096)
@@ -60,7 +62,7 @@ def get_config():
 
     # default configs for llff, automatically set if dataset is llff and not override_defaults
     if config.dataset_name == "llff" and not config.override_defaults:
-        config.factor = 1
+        config.factor = 8
         config.ray_shape = "cylinder"
         config.white_bkgd = False
         config.density_noise = 1.0

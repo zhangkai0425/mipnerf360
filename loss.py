@@ -34,6 +34,8 @@ def Loss_nerf(input,target):
     batch_size = input.shape[0]
     mse_loss = ((input[...,:3] - target[..., :3]) ** 2).sum() / batch_size
     psnr = mse_to_psnr(mse_loss)
+    # this way,we can change the loss to log(loss) and speed up the training
+    mse_loss = -mse_to_psnr(mse_loss) + 30
 
     return mse_loss,psnr
 

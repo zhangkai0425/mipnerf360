@@ -1,11 +1,12 @@
 import torch
-from os import path
-from config import get_config
-from model import MipNeRF
 import imageio
-from datasets import get_dataloader
+from os import path
 from tqdm import tqdm
-from pose_utils import visualize_depth, visualize_normals, to8b
+from utils import to8b
+from model import mipNeRF360
+from config import get_config
+from dataset import get_dataloader
+from pose import visualize_depth, visualize_normals
 
 
 def visualize(config):
@@ -19,10 +20,12 @@ def visualize(config):
         density_bias=config.density_bias,
         rgb_padding=config.rgb_padding,
         resample_padding=config.resample_padding,
+        white_bkgd=config.white_bkgd,
         viewdir_min_deg=config.viewdir_min_deg,
         viewdir_max_deg=config.viewdir_max_deg,
         device=config.device
     )
+
     model.load_state_dict(torch.load(config.model_weight_path))
     model.eval()
 
@@ -32,7 +35,6 @@ def visualize(config):
         depth_frames = []
     if config.visualize_normals:
         normal_frames = []
-    print("开始生成视频！")
     for ray in tqdm(data):
         img, dist, acc = model.render_image(ray, data.h, data.w, chunks=config.chunks)
         rgb_frames.append(img)
@@ -41,7 +43,7 @@ def visualize(config):
         if config.visualize_normals:
             normal_frames.append(to8b(visualize_normals(dist, acc)))
 
-    imageio.mimwrite(path.join(config.log_dir, "video_10000.mp4"), rgb_frames, fps=30, quality=10)
+    imageio.mimwrite(path.join(config.log_dir, "video.mp4"), rgb_frames, fps=30, quality=10)
     if config.visualize_depth:
         imageio.mimwrite(path.join(config.log_dir, "depth.mp4"), depth_frames, fps=30, quality=10)
     if config.visualize_normals:

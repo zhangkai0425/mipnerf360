@@ -46,7 +46,7 @@ def get_config():
     config.add_argument("--eval_every", type=int, default=10)
     config.add_argument("--device", type=str, default="cuda")
     # visualization hyperparams
-    config.add_argument("--chunks", type=int, default=4096)
+    config.add_argument("--chunks", type=int, default=1024)
     config.add_argument("--model_weight_path", default="log/model.pt")
     config.add_argument("--visualize_depth", action="store_true")
     config.add_argument("--visualize_normals", action="store_true")
@@ -60,8 +60,14 @@ def get_config():
 
     config = config.parse_args()
 
-    # default configs for llff, automatically set if dataset is llff and not override_defaults
+    # default configs for llff and nerf_360,actually,in my implementation,they are equal
     if config.dataset_name == "llff" and not config.override_defaults:
+        config.factor = 8
+        config.ray_shape = "cylinder"
+        config.white_bkgd = False
+        config.density_noise = 1.0
+    
+    if config.dataset_name == "nerf_360" and not config.override_defaults:
         config.factor = 8
         config.ray_shape = "cylinder"
         config.white_bkgd = False
@@ -71,8 +77,8 @@ def get_config():
     base_data_path = "data/nerf_llff_data/"
     if config.dataset_name == "blender":
         base_data_path = "data/nerf_synthetic/"
-    elif config.dataset_name == "multicam":
-        base_data_path = "data/nerf_multiscale/"
+    if config.dataset_name == "nerf_360":
+        base_data_path = "data/nerf_360/"
     config.base_dir = path.join(base_data_path, config.scene)
 
     return config

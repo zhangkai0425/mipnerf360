@@ -1,6 +1,4 @@
-# mipnerf-360
-
-## Pytorch implementation of mipnerf-360
+# mipnerf-360:Pytorch implementation of mipnerf-360
 
 # 战略规划
 

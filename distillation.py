@@ -29,7 +29,7 @@ def bounds(t_vals_fine,fine_weights,t_vals_coarse):
         B[...,i] = torch.sum(fine_weights[...,~((t0>R)|(t1<L))],dim=-1)
     # stop grad of all
     B = B.detach()
-    
+
     return B
 
 def loss_prop(coarse_weights,bounds):
@@ -42,8 +42,10 @@ def loss_prop(coarse_weights,bounds):
     Returns:
         loss:torch.tensor(float32),[batch_size],loss of the proposal net
     """
+    batch_size = bounds.shape[0]
     eps = 1e-6
     max_func = nn.ReLU()
     loss = torch.sum(torch.square(max_func(bounds - coarse_weights)) / (coarse_weights + eps))
+    loss = loss / batch_size
 
     return loss

@@ -5,16 +5,16 @@ import os.path
 import numpy as np
 from os import path
 from tqdm import tqdm
-from utils import to8b
-from loss import Loss_nerf
 import torch.optim as optim
 from model import mipNeRF360
 from config import get_config
-from scheduler import lr_decay
+from intern.utils import to8b
+from intern.loss import Loss_nerf
 import torch.utils.tensorboard as tb
+from intern.scheduler import lr_decay
 from dataset import get_dataloader, cycle
-from pose import visualize_depth, visualize_normals
-from loss import Loss_prop,Loss_nerf,Loss_dist,mse_to_psnr
+from intern.pose import visualize_depth, visualize_normals
+from intern.loss import Loss_prop,Loss_nerf,Loss_dist,mse_to_psnr
 
 def test_model(config):
     test_data = get_dataloader(config.dataset_name, config.base_dir, split="test", factor=config.factor, shuffle=False)

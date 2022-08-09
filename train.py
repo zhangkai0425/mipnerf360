@@ -6,10 +6,10 @@ from os import path
 import torch.optim as optim
 from model import mipNeRF360
 from config import get_config
-from scheduler import lr_decay
 import torch.utils.tensorboard as tb
+from intern.scheduler import lr_decay
 from dataset import get_dataloader, cycle
-from loss import Loss_prop,Loss_nerf,Loss_dist,mse_to_psnr
+from intern.loss import Loss_prop,Loss_nerf,Loss_dist,mse_to_psnr
 
 
 def train_model(config):

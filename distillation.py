@@ -25,11 +25,11 @@ def bounds(t_vals_fine,fine_weights,t_vals_coarse):
     B = torch.zeros_like(fine_weights)
     # use for loop,only num_samples times,so don't worry the cost of time
     for i in range(fine_weights.shape[-1]):
-        L,R = T0[...,i],T1[...,i]  
-        B[...,i] = torch.sum(fine_weights[...,~((t0[...,i]>R)|(t1[...,i]<L))],dim=-1)
+        L,R = T0[...,i,None],T1[...,i,None]
+        B[...,i] = torch.sum(fine_weights[...,~((t0>R)|(t1<L))],dim=-1)
     # stop grad of all
     B = B.detach()
-
+    
     return B
 
 def loss_prop(coarse_weights,bounds):
@@ -44,6 +44,6 @@ def loss_prop(coarse_weights,bounds):
     """
     eps = 1e-6
     max_func = nn.ReLU()
-    loss = torch.sum(torch.square(max_func(bounds - coarse_weights)) / (coarse_weights + eps),dim=-1)
+    loss = torch.sum(torch.square(max_func(bounds - coarse_weights)) / (coarse_weights + eps))
 
     return loss

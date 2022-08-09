@@ -19,7 +19,7 @@ def get_dataloader(dataset_name, base_dir, split, factor=4, batch_size=None, shu
     d = get_dataset(dataset_name, base_dir, split, factor, device)
     # make the batchsize height*width, so that one "batch" from the dataloader corresponds to one
     # image used to render a video, and don't shuffle dataset
-    if split == "render":
+    if split == "render" or split == "test":
         batch_size = d.w * d.h
         shuffle = False
     loader = DataLoader(d, batch_size=batch_size, shuffle=shuffle)
@@ -223,7 +223,7 @@ class LLFF(NeRFDataset):
             for f in sorted(os.listdir(img_dir))
             if f.endswith('JPG') or f.endswith('jpg') or f.endswith('png')
         ]
-        print("debug here看这里!!!::images_file = ",img_files)
+        # print("debug here::images_file = ",img_files)
         images = []
         for img_file in img_files:
             with open(img_file, 'rb') as img_in:
@@ -336,7 +336,6 @@ class LLFF(NeRFDataset):
     
     def generate_spiral_poses(self, n_poses=120):
         """Generate a spiral path for rendering."""
-        print("我被调用了!")
         c2w = poses_avg(self.poses)
         # Get average pose.
         up = normalize(self.poses[:, :3, 1].sum(0))
@@ -378,7 +377,7 @@ class LLFF(NeRFDataset):
         radii = (0.5 * (dx + dy))[..., None] * 2 / np.sqrt(12)
 
         ones = np.ones_like(ndc_origins[..., :1])
-        print("debug here::rays::",ndc_origins.shape,radii.shape)
+        # print("debug here::rays::",ndc_origins.shape,radii.shape)
         self.rays = Rays(
             origins=ndc_origins,
             directions=ndc_directions,

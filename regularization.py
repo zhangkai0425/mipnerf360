@@ -16,9 +16,12 @@ def loss_dist(s_vals,weights):
     Returns:
         loss_dist:torch.tensor(float32),loss_dist according to the paper  
     """
+    batch_size = weights.shape[0]
     loss_dist = 0
     for i in range(weights.shape[-1]):
         for j in range(weights.shape[-1]):
-            loss_dist += weights[...,i] * weights[...,j] * torch.abs((s_vals[...,i] + s_vals[...,i+1])/2-(s_vals[...,j] + s_vals[...,j+1])/2)
+            loss_dist += torch.sum(weights[...,i] * weights[...,j] * torch.abs((s_vals[...,i] + s_vals[...,i+1])/2-(s_vals[...,j] + s_vals[...,j+1])/2))
     loss_dist += 1/3 * torch.sum(weights ** 2 * (s_vals[...,1:]-s_vals[...,:-1]))
+    loss_dist /= batch_size
+
     return loss_dist

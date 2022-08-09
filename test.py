@@ -54,3 +54,7 @@ def test_model(config):
             cv2.imwrite(path.join(save_path,"norm_{:04d}.png".format(index)), norm)
         index += 1
     print("Evaluating completed!")
+
+if __name__ == "__main__":
+    config = get_config()
+    test_model(config)

@@ -48,7 +48,7 @@ def train_model(config):
     logger = tb.SummaryWriter(path.join(config.log_dir, 'train'), flush_secs=1)
 
     # 准备修改为enumerate的形式
-    print_every = 100
+    print_every = 10
     
     for step in range(0, config.max_steps):
         rays, pixels = next(data)
@@ -89,9 +89,12 @@ def train_model(config):
         logger.add_scalar('train/lr', float(scheduler.get_last_lr()[-1]), global_step=step)
         print("[step=%s]:"%(step),"avg_psnr=%s"%(float(np.mean(psnr))))
 
-            
-        # if step % print_every == 0 and step != 0:
-        #     print("[step=%s]:"%(step),"coarse_psnr=%s,fine_psnr=%s,avg_psnr=%s"%( float(np.mean(psnr[:-1])),float(psnr[-1]),float(np.mean(psnr))))
+        # evaluate the model
+        if step % print_every == 0 and step != 0:
+            del rays
+            del pixels
+            psnr = eval_model(config, model, eval_data)
+            print("[step=%s]:"%(step),"eval psnr=%s"%psnr)
 
     #     if step % config.save_every == 0:
     #         if eval_data:
@@ -115,10 +118,12 @@ def eval_model(config, model, data):
     model.eval()
     rays, pixels = next(data)
     with torch.no_grad():
-        comp_rgb, _, _ = model(rays)
+        finals_rgbs, _, _ = model(rays)
     pixels = pixels.to(config.device)
     model.train()
-    return torch.tensor([mse_to_psnr(torch.mean((rgb - pixels[..., :3])**2)) for rgb in comp_rgb])
+    _,psnr = Loss_nerf(input=finals_rgbs,target=pixels)
+    psnr = psnr.detach().cpu().numpy()
+    return float(np.mean(psnr))
 
 
 if __name__ == "__main__":

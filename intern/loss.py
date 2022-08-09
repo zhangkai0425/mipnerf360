@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
-from distillation import bounds,loss_prop
-from regularization import loss_dist
+from intern.distillation import bounds,loss_prop
+from intern.regularization import loss_dist
 
 def Loss_prop(t,w,t_hat,w_hat):
     """comput the proposal loss of prop_net

@@ -1,5 +1,5 @@
 import numpy as np
-from utils import normalize,convolve2d
+from intern.utils import normalize,convolve2d
 from scipy import signal
 import matplotlib.cm as cm
 

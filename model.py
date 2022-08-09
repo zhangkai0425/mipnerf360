@@ -101,6 +101,7 @@ class nerf_net(nn.Module):
                  density_bias=-1,
                  rgb_padding=0.001,
                  resample_padding=0.01,
+                 white_bkgd=False,
                  viewdir_min_deg=0,
                  viewdir_max_deg=4,
                  device=torch.device("cuda"),
@@ -114,6 +115,7 @@ class nerf_net(nn.Module):
         self.density_bias = density_bias
         self.rgb_padding = rgb_padding
         self.resample_padding = resample_padding
+        self.white_bkgd = white_bkgd
         self.viewdir_min_deg = viewdir_min_deg
         self.viewdir_max_deg = viewdir_max_deg
         self.device = device
@@ -181,7 +183,7 @@ class nerf_net(nn.Module):
         # volumetric rendering
         rgb = raw_rgb * (1 + 2 * self.rgb_padding) - self.rgb_padding
         density = self.density_activation(raw_density + self.density_bias)
-        comp_rgb,distance,acc,weights = volumetric_rendering(rgb=rgb, density=density, t_vals=t_vals, dirs=rays.directions.to(rgb.device),white_bkgd=False)
+        comp_rgb,distance,acc,weights = volumetric_rendering(rgb=rgb, density=density, t_vals=t_vals, dirs=rays.directions.to(rgb.device),white_bkgd=self.white_bkgd)
         
         final_rgbs = comp_rgb
         final_dist = distance
@@ -206,6 +208,7 @@ class mipNeRF360(nn.Module):
                  density_bias=-1,
                  rgb_padding=0.001,
                  resample_padding=0.01,
+                 white_bkgd = False,
                  viewdir_min_deg=0,
                  viewdir_max_deg=4,
                  device=torch.device("cuda"),
@@ -220,6 +223,7 @@ class mipNeRF360(nn.Module):
         self.density_bias = density_bias
         self.rgb_padding = rgb_padding
         self.resample_padding = resample_padding 
+        self.white_bkgd = white_bkgd
         self.viewdir_min_deg = viewdir_min_deg
         self.viewdir_max_deg = viewdir_max_deg
         self.device = device
@@ -235,7 +239,7 @@ class mipNeRF360(nn.Module):
         # nerf network: depth = 8 width = 1024
         self.nerf_net = nerf_net(randomized=self.randomized,num_samples=self.num_samples,
                         hidden_nerf=self.hidden_nerf,density_bias=self.density_bias,rgb_padding=self.rgb_padding,
-                        resample_padding=self.resample_padding,viewdir_min_deg=self.viewdir_min_deg,viewdir_max_deg=self.viewdir_max_deg,
+                        resample_padding=self.resample_padding,white_bkgd=self.white_bkgd,viewdir_min_deg=self.viewdir_min_deg,viewdir_max_deg=self.viewdir_max_deg,
                         device=self.device)
 
         self.to(device)

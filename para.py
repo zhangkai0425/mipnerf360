@@ -2,6 +2,16 @@ import torch
 import torch.nn as nn
 from torch.autograd.functional import jacobian
 
+def t_to_s(t_vals,near,far):
+    """transform t to s:using the formula in the paper"""
+    s_vals = (g(t_vals) - g(near)) / (g(far) - g(near))
+    return s_vals
+
+def s_to_t(s_vals,near,far):
+    """transform s to t:using the formula in the paper"""
+    t_vals = g(s_vals * g(far) + (1-s_vals) * g(near))
+    return t_vals
+
 def g(x):
     """compute the disparity of x:g(x)=1/x"""
     # pad the tensor to avoid dividing zero

@@ -1,9 +1,9 @@
 import torch
 import torch.nn as nn
-from utils import to8b
-from para import t_to_s
-from ray import sample_along_rays,resample_along_rays,volumetric_rendering,namedtuple_map
-from encoding import PositionalEncoding,ViewdirectionEncoding
+from intern.utils import to8b
+from intern.parameterization import t_to_s
+from intern.ray import sample_along_rays,resample_along_rays,volumetric_rendering,namedtuple_map
+from intern.encoding import PositionalEncoding,ViewdirectionEncoding
 
 def _kaiming_init(model):
     """perform kaiming initialization to the model"""

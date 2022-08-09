@@ -1,7 +1,7 @@
 import numpy as np
 import torch
-from collections import namedtuple
 from para import g,para_rays
+from collections import namedtuple
 
 Rays = namedtuple('Rays',('origins','directions','viewdirs','radii','near','far'))
 

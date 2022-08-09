@@ -1,18 +1,22 @@
+import cv2
 import torch
 import shutil
 import os.path
 import numpy as np
 from os import path
+from tqdm import tqdm
+from utils import to8b
 import torch.optim as optim
 from model import mipNeRF360
 from config import get_config
 from scheduler import lr_decay
 import torch.utils.tensorboard as tb
 from dataset import get_dataloader, cycle
+from pose import visualize_depth, visualize_normals
 from loss import Loss_prop,Loss_nerf,Loss_dist,mse_to_psnr
 
 def test_model(config):
-    test_data = iter(cycle(get_dataloader(dataset_name=config.dataset_name, base_dir=config.base_dir, split="test", factor=config.factor, batch_size=config.batch_size, shuffle=True, device=config.device)))
+    test_data = get_dataloader(config.dataset_name, config.base_dir, split="test", factor=config.factor, shuffle=False)
     model = mipNeRF360(
         randomized=config.randomized,
         num_samples=config.num_samples,
@@ -27,4 +31,21 @@ def test_model(config):
     )
     model.load_state_dict(torch.load(config.model_weight_path))
     model.eval()
+
+    print("Evaluating model on", len(test_data), "different view directions")
+    
+    save_path = path.join(config.log_dir,"test")
+    os.makedirs(save_path, exist_ok=True)
+    index = 0
+    for rays,pixels in tqdm(test_data):
+        print("")
+        img, dist, acc = model.render_image(rays, test_data.h, test_data.w, chunks=config.chunks)
+        cv2.imwrite(path.join(save_path,"rgb_{:04d}.png".format(index)), img)
+        if config.visualize_depth:
+            dist = to8b(visualize_depth(dist, acc, test_data.near, test_data.far))
+            cv2.imwrite(path.join(save_path,"dist_{:04d}.png".format(index)), dist)
+        if config.visualize_normals:
+            norm = to8b(visualize_normals(dist, acc))
+            cv2.imwrite(path.join(save_path,"norm_{:04d}.png".format(index)), norm)
+        index += 1
     

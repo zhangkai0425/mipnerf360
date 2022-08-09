@@ -6,6 +6,7 @@ import numpy as np
 from os import path
 from tqdm import tqdm
 from utils import to8b
+from loss import Loss_nerf
 import torch.optim as optim
 from model import mipNeRF360
 from config import get_config
@@ -25,6 +26,7 @@ def test_model(config):
         density_bias=config.density_bias,
         rgb_padding=config.rgb_padding,
         resample_padding=config.resample_padding,
+        white_bkgd=config.white_bkgd,
         viewdir_min_deg=config.viewdir_min_deg,
         viewdir_max_deg=config.viewdir_max_deg,
         device=config.device
@@ -36,10 +38,13 @@ def test_model(config):
     
     save_path = path.join(config.log_dir,"test")
     os.makedirs(save_path, exist_ok=True)
-    index = 0
-    for rays,pixels in tqdm(test_data):
-        print("")
+
+    for index,(rays,pixels) in enumerate(test_data):
+        print("Evaluating the model:[{}/{}]:".format(index,len(test_data)))
         img, dist, acc = model.render_image(rays, test_data.h, test_data.w, chunks=config.chunks)
+        target_img = to8b(torch.cat(pixels, dim=0).reshape(test_data.h, test_data.w, 3).numpy())
+        _,psnr = Loss_nerf(input=img,target=target_img)
+        print("PSNR={}".format(psnr))
         cv2.imwrite(path.join(save_path,"rgb_{:04d}.png".format(index)), img)
         if config.visualize_depth:
             dist = to8b(visualize_depth(dist, acc, test_data.near, test_data.far))
@@ -48,4 +53,4 @@ def test_model(config):
             norm = to8b(visualize_normals(dist, acc))
             cv2.imwrite(path.join(save_path,"norm_{:04d}.png".format(index)), norm)
         index += 1
-    
+    print("Evaluating completed!")

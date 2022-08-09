@@ -19,4 +19,3 @@ def to8b(img):
         return np.array([to8b(i) for i in img])
     else:
         return (255 * np.clip(np.nan_to_num(img), 0, 1)).astype(np.uint8)
-

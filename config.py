@@ -31,7 +31,7 @@ def get_config():
     # loss and optimizer hyperparams
     config.add_argument("--dist_weight_decay", type=float, default=0.01)
     config.add_argument("--lr_init", type=float, default=2e-3)
-    config.add_argument("--lr_final", type=float, default=2e-4)
+    config.add_argument("--lr_final", type=float, default=2e-5)
     config.add_argument("--lr_delay_steps", type=int, default=2500)
     config.add_argument("--lr_delay_mult", type=float, default=0.1)
     config.add_argument("--weight_decay", type=float, default=1e-5)
@@ -46,7 +46,7 @@ def get_config():
     config.add_argument("--eval_every", type=int, default=10)
     config.add_argument("--device", type=str, default="cuda")
     # visualization hyperparams
-    config.add_argument("--chunks", type=int, default=1024)
+    config.add_argument("--chunks", type=int, default=128)
     config.add_argument("--model_weight_path", default="log/model.pt")
     config.add_argument("--visualize_depth", action="store_true")
     config.add_argument("--visualize_normals", action="store_true")
@@ -62,13 +62,13 @@ def get_config():
 
     # default configs for llff and nerf_360,actually,in my implementation,they are equal
     if config.dataset_name == "llff" and not config.override_defaults:
-        config.factor = 8
+        config.factor = 64
         config.ray_shape = "cylinder"
         config.white_bkgd = False
         config.density_noise = 1.0
     
     if config.dataset_name == "nerf_360" and not config.override_defaults:
-        config.factor = 8
+        config.factor = 64
         config.ray_shape = "cylinder"
         config.white_bkgd = False
         config.density_noise = 1.0
@@ -79,6 +79,7 @@ def get_config():
         base_data_path = "data/nerf_synthetic/"
     if config.dataset_name == "nerf_360":
         base_data_path = "data/nerf_360/"
+        config.dataset_name = "llff"
     config.base_dir = path.join(base_data_path, config.scene)
 
     return config

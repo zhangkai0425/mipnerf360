@@ -19,7 +19,7 @@ def train_model(config):
     data = iter(cycle(get_dataloader(dataset_name=config.dataset_name, base_dir=config.base_dir, split="train", factor=config.factor, batch_size=config.batch_size, shuffle=True, device=config.device)))
     eval_data = None
     if config.do_eval:
-        eval_data = iter(cycle(get_dataloader(dataset_name=config.dataset_name, base_dir=config.base_dir, split="eval", factor=config.factor, batch_size=config.batch_size, shuffle=True, device=config.device)))
+        eval_data = iter(cycle(get_dataloader(dataset_name=config.dataset_name, base_dir=config.base_dir, split="test", factor=config.factor, batch_size=config.batch_size, shuffle=True, device=config.device)))
 
     model = mipNeRF360(
         randomized=config.randomized,

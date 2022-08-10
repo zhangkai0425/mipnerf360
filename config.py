@@ -62,13 +62,13 @@ def get_config():
 
     # default configs for llff and nerf_360,actually,in my implementation,they are equal
     if config.dataset_name == "llff" and not config.override_defaults:
-        config.factor = 64
+        config.factor = 8
         config.ray_shape = "cylinder"
         config.white_bkgd = False
         config.density_noise = 1.0
     
     if config.dataset_name == "nerf_360" and not config.override_defaults:
-        config.factor = 64
+        config.factor = 8
         config.ray_shape = "cylinder"
         config.white_bkgd = False
         config.density_noise = 1.0

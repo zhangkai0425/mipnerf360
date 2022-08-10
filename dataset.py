@@ -19,7 +19,7 @@ def get_dataloader(dataset_name, base_dir, split, factor=4, batch_size=None, shu
     d = get_dataset(dataset_name, base_dir, split, factor, device)
     # make the batchsize height*width, so that one "batch" from the dataloader corresponds to one
     # image used to render a video, and don't shuffle dataset
-    if split == "render" or split == "test":
+    if split == "render" or split == "visualize":
         batch_size = d.w * d.h
         shuffle = False
     loader = DataLoader(d, batch_size=batch_size, shuffle=shuffle)

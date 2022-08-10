@@ -40,18 +40,21 @@ def test_model(config):
     os.makedirs(save_path, exist_ok=True)
 
     for index,(rays,pixels) in enumerate(test_data):
+        # print("debug here::",pixels.shape,pixels[0])
         print("Evaluating the model:[{}/{}]:".format(index,len(test_data)))
         img, dist, acc = model.render_image(rays, test_data.h, test_data.w, chunks=config.chunks)
-        target_img = to8b(torch.cat(pixels, dim=0).reshape(test_data.h, test_data.w, 3).numpy())
-        _,psnr = Loss_nerf(input=img,target=target_img)
-        print("PSNR={}".format(psnr))
         cv2.imwrite(path.join(save_path,"rgb_{:04d}.png".format(index)), img)
+        target_img = pixels.reshape(test_data.h, test_data.w, 3).numpy()
+        mse = np.sum(((img / 255.).astype(np.float32) - target_img) ** 2)
+        psnr = -10.0 * np.log10(mse)
+        print("PSNR={}".format(psnr))
+        
         if config.visualize_depth:
-            dist = to8b(visualize_depth(dist, acc, test_data.near, test_data.far))
-            cv2.imwrite(path.join(save_path,"dist_{:04d}.png".format(index)), dist)
+            dist_img = to8b(visualize_depth(dist, acc, test_data.near, test_data.far))
+            cv2.imwrite(path.join(save_path,"dist_{:04d}.png".format(index)), dist_img)
         if config.visualize_normals:
-            norm = to8b(visualize_normals(dist, acc))
-            cv2.imwrite(path.join(save_path,"norm_{:04d}.png".format(index)), norm)
+            norm_img = to8b(visualize_normals(dist, acc))
+            cv2.imwrite(path.join(save_path,"norm_{:04d}.png".format(index)), norm_img)
         index += 1
     print("Evaluating completed!")
 

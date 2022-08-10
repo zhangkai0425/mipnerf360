@@ -99,7 +99,7 @@ cd mipnerf-360
 python video.py --log_dir log/garden --dataset_name nerf_360 --scene garden --model_weight_path log/garden/model_10000.pt --visualize_depth --visualize_normals
 ```
 
-​	相关结果保存在`log/test`目录下
+​	相关结果保存在`log`目录下
 
 #### demo
 

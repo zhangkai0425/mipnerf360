@@ -109,11 +109,11 @@ python video.py --log_dir log/garden --dataset_name nerf_360 --scene garden --mo
 
 ```bash
 ...
-+ demo              	# demo scripts
++ demo              	        # demo scripts
 + env              		# environment
 	-- requirements.txt
 	-- environment.yaml
-+ intern            	# all the keypoints in mipnerf360
++ intern            	        # all the keypoints in mipnerf360
 	-- distillation.py
 	-- encoding.py
 	-- loss.py
@@ -123,12 +123,12 @@ python video.py --log_dir log/garden --dataset_name nerf_360 --scene garden --mo
 	-- regularization.py
 	-- scheduler.py
 	-- utils.py
-+ log                 # log directory
-README.md 
-config.py            	# config
-dataset.py            # dataset loader
-model.py            	# mipnerf360 model
-test.py              	# test the model:generate the target images
-train.py             	# train the model
-video.py              # visualize and generate the videos
++ log                           # log directory
+README.md                       # README
+config.py            	        # config
+dataset.py                      # dataset loader
+model.py            	        # mipnerf360 model
+test.py              	        # test the model:generate the target images
+train.py             	        # train the model
+video.py                        # visualize and generate the videos
 ```

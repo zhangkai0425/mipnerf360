@@ -263,7 +263,7 @@ class mipNeRF360(nn.Module):
                 # put chunk of rays on device
                 chunk_rays = namedtuple_map(lambda r: r[i:i+chunks].to(self.device), rays)
                 rgb, distance, acc = self(chunk_rays)
-                print("渲染中，进度：%s / %s"%(i//chunks,length//chunks))
+                print("rendering,schedule:%s / %s"%(i//chunks,length//chunks))
                 rgbs.append(rgb.cpu())
                 dists.append(distance.cpu())
                 accs.append(acc.cpu())

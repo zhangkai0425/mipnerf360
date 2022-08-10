@@ -31,7 +31,7 @@ conda activate mip-NeRF
 
 3. 数据集准备
 
-   实验数据包括[nerf_synthetic](https://drive.google.com/drive/folders/128yBriW1IG_3NJ5Rp7APSTZsJqdJdfc1),[nerf_llff_data](https://drive.google.com/drive/folders/128yBriW1IG_3NJ5Rp7APSTZsJqdJdfc1),[nerf_360](http://storage.googleapis.com/gresearch/refraw360/360_v2.zip)
+   实验数据包括[nerf_synthetic](https://drive.google.com/drive/folders/128yBriW1IG_3NJ5Rp7APSTZsJqdJdfc1),[nerf_llff_data](https://drive.google.com/drive/folders/128yBriW1IG_3NJ5Rp7APSTZsJqdJdfc1),[nerf_360](https://jonbarron.info/mipnerf360/)
 
    本实验中，下载数据集后放置在`data`目录下，分别为`data/nerf_synthetic`、`data/nerf_llff_data`或`data/nerf_360`
 

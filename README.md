@@ -1,5 +1,7 @@
 # mipnerf-360:Pytorch implementation of mipnerf-360
 
+#### 注：能不用尽量不用，这个代码除了比较简洁易懂之外一无是处，真的，推荐去直接运行multinerf的开源代码
+
 #### 运行准备：
 
 1. 克隆代码到本地仓库

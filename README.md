@@ -151,3 +151,9 @@ test.py              	        # test the model:generate the target images
 train.py             	        # train the model
 video.py                        # visualize and generate the videos
 ```
+
+#### 其他
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=Tohrusky/Final2x&type=Date)](https://star-history.com/#Tohrusky/Final2x&Date)

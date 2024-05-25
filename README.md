@@ -156,4 +156,4 @@ video.py                        # visualize and generate the videos
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=Tohrusky/Final2x&type=Date)](https://star-history.com/#Tohrusky/Final2x&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=zhangkai0425/mipnerf360&type=Date)](https://star-history.com/#zhangkai0425/mipnerf360&Date)
